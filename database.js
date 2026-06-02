@@ -110,6 +110,36 @@ async function init() {
   try { _db.run('ALTER TABLE events ADD COLUMN person1_name TEXT'); } catch(e) {}
   try { _db.run('ALTER TABLE events ADD COLUMN person2_name TEXT'); } catch(e) {}
 
+  _db.run(`
+    CREATE TABLE IF NOT EXISTS contributors (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id INTEGER NOT NULL,
+      full_name TEXT NOT NULL,
+      phone_number TEXT,
+      contribution_type TEXT NOT NULL,
+      promise_amount REAL DEFAULT 0,
+      paid_amount REAL DEFAULT 0,
+      remaining_balance REAL DEFAULT 0,
+      payment_method TEXT,
+      sender_name TEXT,
+      status TEXT DEFAULT 'Incomplete',
+      created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (event_id) REFERENCES events(id)
+    )
+  `);
+
+  _db.run(`
+    CREATE TABLE IF NOT EXISTS payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      contributor_id INTEGER NOT NULL,
+      amount REAL NOT NULL,
+      payment_method TEXT,
+      sender_name TEXT,
+      paid_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (contributor_id) REFERENCES contributors(id)
+    )
+  `);
+
   save();
 
   const stmt = _db.prepare('SELECT id FROM admin LIMIT 1');
