@@ -351,6 +351,25 @@ async function main() {
     }
   });
 
+  app.post('/admin/events/:id/delete', requireAuth, (req, res) => {
+    try {
+      const event = db.prepare('SELECT * FROM events WHERE id = ?').get([req.params.id]);
+      if (!event) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
+      const contributors = db.prepare('SELECT id FROM contributors WHERE event_id = ?').all([req.params.id]);
+      const ids = contributors.map(function(c) { return c.id; });
+      if (ids.length > 0) {
+        db.prepare('DELETE FROM payments WHERE contributor_id IN (' + ids.map(function() { return '?' }).join(',') + ')').run(ids);
+      }
+      db.prepare('DELETE FROM contributors WHERE event_id = ?').run([req.params.id]);
+      db.prepare('DELETE FROM events WHERE id = ?').run([req.params.id]);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to delete event' });
+    }
+  });
+
   app.get('/', (req, res) => {
     res.redirect('/admin/login');
   });

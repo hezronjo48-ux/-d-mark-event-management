@@ -67,6 +67,7 @@
                   <td><a href="/c/<%= event.unique_link %>" target="_blank" class="link">Open Link</a></td>
                   <td>
                     <a href="/admin/events/<%= event.id %>" class="btn btn-sm btn-secondary">View</a>
+                    <button onclick="deleteEvent(<%= event.id %>, '<%= event.name.replace(/'/g, "\\'") %>')" class="btn btn-sm" style="background:#c62828;color:#fff;margin-left:0.25rem;"><i class="fas fa-trash"></i></button>
                   </td>
                 </tr>
               <% }); %>
@@ -76,5 +77,18 @@
       <% } %>
     </div>
   </div>
+  <script>
+    function deleteEvent(id, name) {
+      if (confirm('Delete "' + name + '" and all its contributions? This cannot be undone.')) {
+        fetch('/admin/events/' + id + '/delete', { method: 'POST' })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.success) { window.location.reload(); }
+            else { alert('Failed: ' + (d.error || 'Unknown')); }
+          })
+          .catch(function() { alert('Failed to delete'); });
+      }
+    }
+  </script>
 </body>
 </html>
