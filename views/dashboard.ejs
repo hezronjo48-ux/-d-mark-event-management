@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D MARK EVENT MANAGEMENT - Dashboard</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-container">
+      <div class="nav-brand">D MARK EVENT MANAGEMENT</div>
+      <div class="nav-links">
+        <a href="/admin/dashboard" class="active">Dashboard</a>
+        <a href="/admin/events/create">Create Event</a>
+        <a href="/admin/logout">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>Dashboard</h1>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value"><%= stats.event_count %></div>
+        <div class="stat-label">Events</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <h2>All Events</h2>
+        <a href="/admin/events/create" class="btn btn-primary">Create Event</a>
+      </div>
+
+      <% if (events.length === 0) { %>
+        <div class="empty-state">
+          <p>No events yet. Create your first event to get started.</p>
+        </div>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Event Name</th>
+                <th>Type</th>
+                <th>People</th>
+                <th>Date</th>
+                <th>Contribution Link</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% events.forEach(event => {
+                var isWedding = event.event_type === 'Wedding';
+                var isTwoPerson = event.event_type === 'Wedding' || event.event_type === 'Anniversary';
+                var personDisplay = isWedding ? (event.groom_name + ' & ' + event.bride_name) : isTwoPerson ? (event.person1_name + ' & ' + (event.person2_name || '')) : (event.person1_name || '');
+              %>
+                <tr>
+                  <td><strong><%= event.name %></strong></td>
+                  <td><span class="event-type-label"><%= event.event_type || 'Wedding' %></span></td>
+                  <td><%= personDisplay %></td>
+                  <td><%= event.event_date || '-' %></td>
+                  <td><a href="/c/<%= event.unique_link %>" target="_blank" class="link">Open Link</a></td>
+                  <td>
+                    <a href="/admin/events/<%= event.id %>" class="btn btn-sm btn-secondary">View</a>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contribute - <%= event.groom_name %> & <%= event.bride_name %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="public-page">
+    <div class="wedding-header">
+      <h1 class="wedding-title"><%= event.event_type === 'Wedding' ? (event.groom_name + ' & ' + event.bride_name) : event.event_type === 'Anniversary' ? (event.person1_name + ' & ' + (event.person2_name || '')) : (event.person1_name || '') %></h1>
+      <p class="wedding-subtitle"><%= event.event_type || 'Event' %> Contribution</p>
+      <% if (event.event_date) { %>
+        <p class="wedding-date"><%= new Date(event.event_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+      <% } %>
+      <% if (event.venue) { %>
+        <p class="wedding-venue"><%= event.venue %></p>
+      <% } %>
+    </div>
+
+    <div class="contribution-container">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('new')">New Contribution</button>
+        <button class="tab-btn" onclick="switchTab('update')">Update Promise</button>
+      </div>
+
+      <div id="tab-new" class="tab-content active">
+        <form id="contributionForm">
+          <input type="hidden" name="event_id" value="<%= event.id %>">
+
+          <div class="form-group">
+            <label for="full_name">Full Name *</label>
+            <input type="text" id="full_name" name="full_name" required placeholder="Enter your full name">
+          </div>
+
+          <div class="form-group">
+            <label for="phone_number">Phone Number</label>
+            <input type="tel" id="phone_number" name="phone_number" placeholder="e.g. 0712 345 678">
+          </div>
+
+          <div class="form-group">
+            <label>Contribution Type *</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="contribution_type" value="promise" checked onchange="toggleContributionType()">
+                Promise (Ahadi)
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="contribution_type" value="cash" onchange="toggleContributionType()">
+                Cash Contribution
+              </label>
+            </div>
+          </div>
+
+          <div id="promiseFields">
+            <div class="form-group">
+              <label for="promise_amount">Promise Amount (TZS) *</label>
+              <input type="number" id="promise_amount" name="promise_amount" min="1" step="1" placeholder="Enter promised amount">
+            </div>
+          </div>
+
+          <div id="cashFields" style="display:none;">
+            <div class="form-group">
+              <label for="amount_paid">Amount Paid (TZS) *</label>
+              <input type="number" id="amount_paid" name="amount_paid" min="1" step="1" placeholder="Enter amount paid">
+            </div>
+            <div class="form-group">
+              <label for="payment_method">Payment Method *</label>
+              <select id="payment_method" name="payment_method">
+                <option value="">Select payment method</option>
+                <option value="Vodacom M-Pesa">Vodacom M-Pesa</option>
+                <option value="Airtel Money">Airtel Money</option>
+                <option value="Mixx by Yas">Mixx by Yas</option>
+                <option value="HaloPesa">HaloPesa</option>
+                <option value="Bank">Bank</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="sender_name">Sender Name</label>
+              <input type="text" id="sender_name" name="sender_name" placeholder="Name of person sending the money">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full">Submit Contribution</button>
+        </form>
+        <div id="contributionResult" class="result-message"></div>
+      </div>
+
+      <div id="tab-update" class="tab-content">
+        <div id="searchSection">
+          <p style="font-size:0.85rem;color:#666;margin-bottom:1rem;">If you previously made a promise (Ahadi), enter your full name to make a payment.</p>
+          <div class="form-group">
+            <label for="search_name">Enter Your Full Name</label>
+            <input type="text" id="search_name" placeholder="Enter your full name as registered">
+          </div>
+          <button onclick="searchPromise()" class="btn btn-primary btn-full">Search</button>
+        </div>
+
+        <div id="promiseInfo" style="display:none;">
+          <div class="promise-details">
+            <div class="detail-row">
+              <span class="detail-label">Promised Amount:</span>
+              <span class="detail-value" id="displayPromiseAmount">TZS 0</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Total Paid:</span>
+              <span class="detail-value" id="displayTotalPaid">TZS 0</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Remaining Balance:</span>
+              <span class="detail-value" id="displayRemainingBalance">TZS 0</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Status:</span>
+              <span class="badge" id="displayStatusTag">Incomplete</span>
+            </div>
+          </div>
+
+          <div id="paymentFormSection">
+            <div class="payment-form">
+              <h3>Make a Payment</h3>
+              <input type="hidden" id="promiseContributorId">
+
+              <div class="form-group">
+                <label for="payment_amount">Payment Amount (TZS) *</label>
+                <input type="number" id="payment_amount" min="1" step="1" placeholder="Enter amount to pay now">
+              </div>
+
+              <div class="form-group">
+                <label for="payment_method_update">Payment Method</label>
+                <select id="payment_method_update">
+                  <option value="">Select payment method</option>
+                  <option value="Vodacom M-Pesa">Vodacom M-Pesa</option>
+                  <option value="Airtel Money">Airtel Money</option>
+                  <option value="Mixx by Yas">Mixx by Yas</option>
+                  <option value="HaloPesa">HaloPesa</option>
+                  <option value="Bank">Bank</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="sender_name_update">Sender Name</label>
+                <input type="text" id="sender_name_update" placeholder="Name of person sending">
+              </div>
+
+              <button onclick="submitPayment()" class="btn btn-primary btn-full">Submit Payment</button>
+            </div>
+          </div>
+
+          <div style="margin-top:1rem;">
+            <button onclick="resetSearch()" class="btn btn-sm btn-secondary">Search Another Name</button>
+          </div>
+        </div>
+
+        <div id="searchResult" class="result-message"></div>
+        <div id="paymentResult" class="result-message"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      toggleContributionType();
+    });
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(function(btn) {
+        btn.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-content').forEach(function(content) {
+        content.classList.remove('active');
+      });
+
+      if (tab === 'new') {
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+        document.getElementById('tab-new').classList.add('active');
+      } else {
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        document.getElementById('tab-update').classList.add('active');
+      }
+    }
+
+    function toggleContributionType() {
+      var type = document.querySelector('input[name="contribution_type"]:checked').value;
+      document.getElementById('promiseFields').style.display = type === 'promise' ? 'block' : 'none';
+      document.getElementById('cashFields').style.display = type === 'cash' ? 'block' : 'none';
+
+      if (type === 'promise') {
+        document.getElementById('promise_amount').required = true;
+        document.getElementById('amount_paid').required = false;
+        document.getElementById('payment_method').required = false;
+      } else {
+        document.getElementById('promise_amount').required = false;
+        document.getElementById('amount_paid').required = true;
+        document.getElementById('payment_method').required = true;
+      }
+    }
+
+    document.getElementById('contributionForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var formData = new FormData(this);
+      var data = {};
+      formData.forEach(function(value, key) {
+        data[key] = value;
+      });
+
+      var resultDiv = document.getElementById('contributionResult');
+      resultDiv.className = 'result-message';
+
+      fetch('/api/contribute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+      .then(function(response) { return response.json(); })
+      .then(function(result) {
+        if (result.success) {
+          resultDiv.className = 'result-message success';
+          resultDiv.textContent = result.message;
+          document.getElementById('contributionForm').reset();
+          toggleContributionType();
+        } else {
+          resultDiv.className = 'result-message error';
+          resultDiv.textContent = result.error || 'An error occurred';
+        }
+      })
+      .catch(function() {
+        resultDiv.className = 'result-message error';
+        resultDiv.textContent = 'An error occurred. Please try again.';
+      });
+    });
+
+    function searchPromise() {
+      var name = document.getElementById('search_name').value.trim();
+      var resultDiv = document.getElementById('searchResult');
+      var promiseInfo = document.getElementById('promiseInfo');
+      var searchSection = document.getElementById('searchSection');
+
+      resultDiv.className = 'result-message';
+
+      if (!name) {
+        resultDiv.className = 'result-message error';
+        resultDiv.textContent = 'Please enter your full name';
+        return;
+      }
+
+      fetch('/api/promise/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_id: '<%= event.id %>',
+          full_name: name
+        })
+      })
+      .then(function(response) { return response.json(); })
+      .then(function(result) {
+        if (result.found && result.promises.length > 0) {
+          var promise = result.promises[0];
+
+          document.getElementById('displayPromiseAmount').textContent = 'TZS ' + Number(promise.promise_amount).toLocaleString();
+          document.getElementById('displayTotalPaid').textContent = 'TZS ' + Number(promise.paid_amount).toLocaleString();
+          document.getElementById('displayRemainingBalance').textContent = 'TZS ' + Number(promise.remaining_balance).toLocaleString();
+
+          var statusTag = document.getElementById('displayStatusTag');
+          statusTag.textContent = promise.status;
+          statusTag.className = 'badge ' + (promise.status === 'Done' ? 'badge-success' : 'badge-warning');
+
+          document.getElementById('promiseContributorId').value = promise.id;
+
+          searchSection.style.display = 'none';
+          resultDiv.style.display = 'none';
+          promiseInfo.style.display = 'block';
+
+          var paymentForm = document.getElementById('paymentFormSection');
+          if (promise.remaining_balance <= 0) {
+            paymentForm.style.display = 'none';
+          } else {
+            paymentForm.style.display = 'block';
+          }
+        } else {
+          resultDiv.className = 'result-message error';
+          resultDiv.textContent = result.message;
+          promiseInfo.style.display = 'none';
+          resultDiv.style.display = 'block';
+        }
+      })
+      .catch(function() {
+        resultDiv.className = 'result-message error';
+        resultDiv.textContent = 'An error occurred. Please try again.';
+        resultDiv.style.display = 'block';
+      });
+    }
+
+    function submitPayment() {
+      var contributorId = document.getElementById('promiseContributorId').value;
+      var amount = document.getElementById('payment_amount').value;
+      var paymentMethod = document.getElementById('payment_method_update').value;
+      var senderName = document.getElementById('sender_name_update').value;
+
+      var resultDiv = document.getElementById('paymentResult');
+      resultDiv.className = 'result-message';
+
+      if (!amount || parseFloat(amount) <= 0) {
+        resultDiv.className = 'result-message error';
+        resultDiv.textContent = 'Please enter a valid payment amount';
+        return;
+      }
+
+      fetch('/api/promise/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contributor_id: contributorId,
+          amount: amount,
+          payment_method: paymentMethod,
+          sender_name: senderName
+        })
+      })
+      .then(function(response) { return response.json(); })
+      .then(function(result) {
+        if (result.success) {
+          resultDiv.className = 'result-message success';
+          resultDiv.textContent = result.message;
+
+          document.getElementById('displayTotalPaid').textContent = 'TZS ' + Number(result.data.paid_amount).toLocaleString();
+          document.getElementById('displayRemainingBalance').textContent = 'TZS ' + Number(result.data.remaining_balance).toLocaleString();
+
+          var statusTag = document.getElementById('displayStatusTag');
+          statusTag.textContent = result.data.status;
+          statusTag.className = 'badge ' + (result.data.status === 'Done' ? 'badge-success' : 'badge-warning');
+
+          document.getElementById('payment_amount').value = '';
+          document.getElementById('payment_method_update').value = '';
+          document.getElementById('sender_name_update').value = '';
+
+          if (result.data.remaining_balance <= 0) {
+            document.getElementById('paymentFormSection').style.display = 'none';
+          }
+        } else {
+          resultDiv.className = 'result-message error';
+          resultDiv.textContent = result.error || 'An error occurred';
+        }
+      })
+      .catch(function() {
+        resultDiv.className = 'result-message error';
+        resultDiv.textContent = 'An error occurred. Please try again.';
+      });
+    }
+
+    function resetSearch() {
+      document.getElementById('searchSection').style.display = 'block';
+      document.getElementById('promiseInfo').style.display = 'none';
+      document.getElementById('search_name').value = '';
+      document.getElementById('searchResult').className = 'result-message';
+      document.getElementById('paymentResult').className = 'result-message';
+    }
+  </script>
+</body>
+</html>

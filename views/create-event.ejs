@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D MARK EVENT MANAGEMENT - Create Event</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-container">
+      <div class="nav-brand">D MARK EVENT MANAGEMENT</div>
+      <div class="nav-links">
+        <a href="/admin/dashboard">Dashboard</a>
+        <a href="/admin/events/create" class="active">Create Event</a>
+        <a href="/admin/logout">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="form-card">
+      <h1>Create Event</h1>
+
+      <% if (error) { %>
+        <div class="alert alert-error"><%= error %></div>
+      <% } %>
+
+      <form method="POST" action="/admin/events/create">
+        <div class="form-group">
+          <label for="name">Event Name *</label>
+          <input type="text" id="name" name="name" required placeholder="e.g. Our Wedding Celebration" value="<%= form ? form.name : '' %>">
+        </div>
+
+        <div class="form-group">
+          <label for="event_type">Event Type *</label>
+          <select id="event_type" name="event_type" onchange="toggleEventType()">
+            <option value="Wedding" <%= form && form.event_type === 'Wedding' ? 'selected' : '' %>>Wedding</option>
+            <option value="Birthday" <%= form && form.event_type === 'Birthday' ? 'selected' : '' %>>Birthday</option>
+            <option value="Graduation" <%= form && form.event_type === 'Graduation' ? 'selected' : '' %>>Graduation</option>
+            <option value="Anniversary" <%= form && form.event_type === 'Anniversary' ? 'selected' : '' %>>Anniversary</option>
+            <option value="Fundraiser" <%= form && form.event_type === 'Fundraiser' ? 'selected' : '' %>>Fundraiser</option>
+            <option value="Memorial" <%= form && form.event_type === 'Memorial' ? 'selected' : '' %>>Memorial</option>
+            <option value="Other" <%= form && (form.event_type === 'Other' || (form.event_type && !['Wedding','Birthday','Graduation','Anniversary','Fundraiser','Memorial'].includes(form.event_type))) ? 'selected' : '' %>>Other</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="customTypeField" style="display:none;">
+          <label for="custom_type">Custom Event Type *</label>
+          <input type="text" id="custom_type" name="custom_type" placeholder="e.g. Baby Shower, Reunion, etc." value="<%= form && form.custom_type ? form.custom_type : '' %>">
+        </div>
+
+        <div id="weddingFields">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="groom_name">Groom Name *</label>
+              <input type="text" id="groom_name" name="groom_name" placeholder="Groom's full name" value="<%= form ? form.groom_name : '' %>">
+            </div>
+            <div class="form-group">
+              <label for="bride_name">Bride Name *</label>
+              <input type="text" id="bride_name" name="bride_name" placeholder="Bride's full name" value="<%= form ? form.bride_name : '' %>">
+            </div>
+          </div>
+        </div>
+
+        <div id="personFields">
+          <div class="form-row" id="personRow">
+            <div class="form-group">
+              <label id="person1Label">Person 1 *</label>
+              <input type="text" id="person1_name" name="person1_name" placeholder="First person's full name" value="<%= form ? form.person1_name : '' %>">
+            </div>
+            <div class="form-group" id="person2Group">
+              <label>Person 2 *</label>
+              <input type="text" id="person2_name" name="person2_name" placeholder="Second person's full name" value="<%= form ? form.person2_name : '' %>">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="event_date">Event Date</label>
+            <input type="date" id="event_date" name="event_date" value="<%= form ? form.event_date : '' %>">
+          </div>
+          <div class="form-group">
+            <label for="venue">Venue</label>
+            <input type="text" id="venue" name="venue" placeholder="Event venue address" value="<%= form ? form.venue : '' %>">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full">Create Event</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', toggleEventType);
+    function toggleEventType() {
+      var type = document.getElementById('event_type').value;
+      var weddingFields = document.getElementById('weddingFields');
+      var personFields = document.getElementById('personFields');
+      var person2Group = document.getElementById('person2Group');
+      var personRow = document.getElementById('personRow');
+      var person1Label = document.getElementById('person1Label');
+      var customField = document.getElementById('customTypeField');
+      var customInput = document.getElementById('custom_type');
+
+      if (type === 'Other') {
+        customField.style.display = 'block';
+        customInput.required = true;
+      } else {
+        customField.style.display = 'none';
+        customInput.required = false;
+      }
+
+      if (type === 'Wedding') {
+        weddingFields.style.display = 'block';
+        personFields.style.display = 'none';
+        document.getElementById('groom_name').required = true;
+        document.getElementById('bride_name').required = true;
+        document.getElementById('person1_name').required = false;
+        document.getElementById('person2_name').required = false;
+      } else {
+        weddingFields.style.display = 'none';
+        personFields.style.display = 'block';
+        document.getElementById('groom_name').required = false;
+        document.getElementById('bride_name').required = false;
+
+        if (type === 'Anniversary') {
+          person2Group.style.display = 'block';
+          personRow.style.gridTemplateColumns = '1fr 1fr';
+          person1Label.textContent = 'Person 1 *';
+          document.getElementById('person2_name').required = true;
+        } else {
+          person2Group.style.display = 'none';
+          personRow.style.gridTemplateColumns = '1fr';
+          person1Label.textContent = 'Person Name *';
+          document.getElementById('person2_name').required = false;
+        }
+        document.getElementById('person1_name').required = true;
+      }
+    }
+  </script>
+</body>
+</html>

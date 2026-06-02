@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D MARK EVENT MANAGEMENT - <%= event.name %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-container">
+      <div class="nav-brand">D MARK EVENT MANAGEMENT</div>
+      <div class="nav-links">
+        <a href="/admin/dashboard">Dashboard</a>
+        <a href="/admin/events/create">Create Event</a>
+        <a href="/admin/logout">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <a href="/admin/dashboard" class="back-link">&larr; Back to Dashboard</a>
+    </div>
+
+    <div class="event-card">
+      <h1><%= event.name %></h1>
+      <div class="event-details">
+        <p><span class="label">Type:</span> <span class="event-type-label"><%= event.event_type || 'Wedding' %></span></p>
+        <% if (event.event_type === 'Wedding') { %>
+          <p><span class="label">Groom:</span> <%= event.groom_name %></p>
+          <p><span class="label">Bride:</span> <%= event.bride_name %></p>
+        <% } else if (event.event_type === 'Anniversary') { %>
+          <p><span class="label">Person 1:</span> <%= event.person1_name %></p>
+          <p><span class="label">Person 2:</span> <%= event.person2_name %></p>
+        <% } else { %>
+          <p><span class="label">Name:</span> <%= event.person1_name %></p>
+        <% } %>
+        <% if (event.event_date) { %>
+          <p><span class="label">Date:</span> <%= new Date(event.event_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+        <% } %>
+        <% if (event.venue) { %>
+          <p><span class="label">Venue:</span> <%= event.venue %></p>
+        <% } %>
+      </div>
+
+      <div class="link-section">
+        <label>Contribution Link</label>
+        <div class="link-copy">
+          <input type="text" id="contributionLink" value="<%= contributionLink %>" readonly>
+          <a href="<%= contributionLink %>" target="_blank" class="btn btn-sm btn-secondary"><i class="fas fa-external-link-alt"></i> Open</a>
+          <button class="btn btn-sm btn-secondary" onclick="copyLink()"><i class="fas fa-copy"></i> Copy</button>
+        </div>
+        <p style="font-size:0.8rem;color:#888;margin-top:0.5rem;">Share this link with guests to collect contributions.</p>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">TZS <%= Number(stats.total_promised).toLocaleString() %></div>
+        <div class="stat-label">Total Promised</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">TZS <%= Number(stats.total_paid).toLocaleString() %></div>
+        <div class="stat-label">Total Collected</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">TZS <%= Number(stats.total_remaining).toLocaleString() %></div>
+        <div class="stat-label">Total Remaining</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value"><%= stats.contributor_count %></div>
+        <div class="stat-label">Contributors</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <h2>Contributions</h2>
+        <a href="/admin/export/<%= event.id %>" class="btn btn-gold">Export to Excel</a>
+      </div>
+
+      <% if (contributors.length === 0) { %>
+        <div class="empty-state">
+          <p>No contributions yet. Share the contribution link with your guests.</p>
+        </div>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Full Name</th>
+                <th>Phone</th>
+                <th>Type</th>
+                <th>Promise (TZS)</th>
+                <th>Paid (TZS)</th>
+                <th>Balance (TZS)</th>
+                <th>Payment Method</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% contributors.forEach(c => { %>
+                <tr>
+                  <td><%= c.full_name %></td>
+                  <td><%= c.phone_number || '-' %></td>
+                  <td><%= c.contribution_type %></td>
+                  <td><%= c.promise_amount > 0 ? Number(c.promise_amount).toLocaleString() : '-' %></td>
+                  <td><%= Number(c.paid_amount).toLocaleString() %></td>
+                  <td><%= Number(c.remaining_balance).toLocaleString() %></td>
+                  <td><%= c.payment_method || '-' %></td>
+                  <td>
+                    <span class="badge <%= c.status === 'Done' ? 'badge-success' : 'badge-warning' %>">
+                      <%= c.status %>
+                    </span>
+                  </td>
+                  <td><%= new Date(c.created_at).toLocaleDateString() %></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <script>
+    function copyLink() {
+      const input = document.getElementById('contributionLink');
+      input.select();
+      document.execCommand('copy');
+      const btn = event.target;
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+      setTimeout(() => { btn.innerHTML = orig; }, 2000);
+    }
+  </script>
+</body>
+</html>
