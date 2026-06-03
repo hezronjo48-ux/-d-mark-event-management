@@ -90,16 +90,20 @@
 
       <div id="tab-update" class="tab-content">
         <div id="searchSection">
-          <p style="font-size:0.85rem;color:#666;margin-bottom:1rem;">If you previously made a promise (Ahadi), enter your full name to make a payment.</p>
+          <p style="font-size:0.85rem;color:#666;margin-bottom:1rem;">If you previously made a promise (Ahadi), enter your full name or your Contributor ID (e.g. CNT-001) to make a payment.</p>
           <div class="form-group">
-            <label for="search_name">Enter Your Full Name</label>
-            <input type="text" id="search_name" placeholder="Enter your full name as registered">
+            <label for="search_name">Full Name or Contributor ID</label>
+            <input type="text" id="search_name" placeholder="Enter your full name or CNT-001">
           </div>
           <button onclick="searchPromise()" class="btn btn-primary btn-full">Search</button>
         </div>
 
         <div id="promiseInfo" style="display:none;">
           <div class="promise-details">
+            <div class="detail-row">
+              <span class="detail-label">Contributor ID:</span>
+              <span class="detail-value" id="displayContributorId" style="font-size:0.85rem;">-</span>
+            </div>
             <div class="detail-row">
               <span class="detail-label">Promised Amount:</span>
               <span class="detail-value" id="displayPromiseAmount">TZS 0</span>
@@ -150,7 +154,7 @@
           </div>
 
           <div style="margin-top:1rem;">
-            <button onclick="resetSearch()" class="btn btn-sm btn-secondary">Search Another Name</button>
+            <button onclick="resetSearch()" class="btn btn-sm btn-secondary">Search Again</button>
           </div>
         </div>
 
@@ -233,32 +237,38 @@
     });
 
     function searchPromise() {
-      var name = document.getElementById('search_name').value.trim();
+      var input = document.getElementById('search_name').value.trim();
       var resultDiv = document.getElementById('searchResult');
       var promiseInfo = document.getElementById('promiseInfo');
       var searchSection = document.getElementById('searchSection');
 
       resultDiv.className = 'result-message';
 
-      if (!name) {
+      if (!input) {
         resultDiv.className = 'result-message error';
-        resultDiv.textContent = 'Please enter your full name';
+        resultDiv.textContent = 'Please enter your full name or contributor ID';
         return;
+      }
+
+      var body = { event_id: '<%= event.id %>' };
+      var isId = /^CNT-\d+$/i.test(input);
+      if (isId) {
+        body.contributor_id = input.toUpperCase();
+      } else {
+        body.full_name = input;
       }
 
       fetch('/api/promise/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event_id: '<%= event.id %>',
-          full_name: name
-        })
+        body: JSON.stringify(body)
       })
       .then(function(response) { return response.json(); })
       .then(function(result) {
         if (result.found && result.promises.length > 0) {
           var promise = result.promises[0];
 
+          document.getElementById('displayContributorId').textContent = promise.contributor_id || '-';
           document.getElementById('displayPromiseAmount').textContent = 'TZS ' + Number(promise.promise_amount).toLocaleString();
           document.getElementById('displayTotalPaid').textContent = 'TZS ' + Number(promise.paid_amount).toLocaleString();
           document.getElementById('displayRemainingBalance').textContent = 'TZS ' + Number(promise.remaining_balance).toLocaleString();

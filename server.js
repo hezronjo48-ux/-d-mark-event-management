@@ -291,19 +291,28 @@ async function main() {
   });
 
   app.post('/api/promise/search', (req, res) => {
-    const { event_id, full_name } = req.body;
+    const { event_id, full_name, contributor_id } = req.body;
+    const input = (full_name || contributor_id || '').trim();
 
-    if (!full_name || !full_name.trim()) {
-      return res.status(400).json({ error: 'Please enter your full name' });
+    if (!input) {
+      return res.status(400).json({ error: 'Please enter your full name or contributor ID' });
     }
 
     try {
-      const promises = db.prepare(
-        'SELECT * FROM contributors WHERE event_id = ? AND LOWER(full_name) = LOWER(?) AND contribution_type = "Promise" ORDER BY created_at DESC'
-      ).all([event_id, full_name.trim()]);
+      let promises;
+      const isId = /^CNT-\d+$/i.test(input);
+      if (isId) {
+        promises = db.prepare(
+          'SELECT * FROM contributors WHERE event_id = ? AND contributor_id = ? AND contribution_type = "Promise" ORDER BY created_at DESC'
+        ).all([event_id, input.toUpperCase()]);
+      } else {
+        promises = db.prepare(
+          'SELECT * FROM contributors WHERE event_id = ? AND LOWER(full_name) LIKE ? AND contribution_type = "Promise" ORDER BY created_at DESC'
+        ).all([event_id, '%' + input.toLowerCase() + '%']);
+      }
 
       if (promises.length === 0) {
-        return res.json({ found: false, message: 'No promise found. Please check your name or make a new contribution.' });
+        return res.json({ found: false, message: 'No promise found. Please check your name/ID or make a new contribution.' });
       }
 
       res.json({ found: true, promises });
