@@ -218,7 +218,7 @@
       .then(function(result) {
         if (result.success) {
           resultDiv.className = 'result-message success';
-          resultDiv.textContent = result.message;
+          resultDiv.innerHTML = result.message + (result.contributor_id ? '<br><strong>Your Contributor ID: ' + result.contributor_id + '</strong><br><small style="font-size:0.75rem;">Save this ID for future reference.</small>' : '');
           document.getElementById('contributionForm').reset();
           toggleContributionType();
         } else {

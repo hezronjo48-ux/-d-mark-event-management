@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D MARK EVENT MANAGEMENT - <%= contributor.full_name %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-container">
+      <div class="nav-brand">D MARK EVENT MANAGEMENT</div>
+      <div class="nav-links">
+        <a href="/admin/dashboard">Dashboard</a>
+        <a href="/admin/events/<%= event.id %>">Event Detail</a>
+        <a href="/admin/logout">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <a href="/admin/events/<%= event.id %>" class="back-link">&larr; Back to <%= event.name %></a>
+    </div>
+
+    <div class="event-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
+        <div>
+          <h1><%= contributor.full_name %></h1>
+          <p style="color:#888;font-size:0.9rem;">
+            <span class="contributor-id-badge"><%= contributor.contributor_id %></span>
+            <span style="margin-left:0.5rem;"><%= contributor.contribution_type %></span>
+          </p>
+        </div>
+        <span class="badge <%= contributor.status === 'Done' ? 'badge-success' : 'badge-warning' %>" style="font-size:0.9rem;padding:0.4rem 1rem;">
+          <%= contributor.status %>
+        </span>
+      </div>
+
+      <div class="stats-grid" style="margin-top:1.5rem;">
+        <div class="stat-card">
+          <div class="stat-value">TZS <%= Number(contributor.promise_amount || 0).toLocaleString() %></div>
+          <div class="stat-label">Promised</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">TZS <%= Number(contributor.paid_amount || 0).toLocaleString() %></div>
+          <div class="stat-label">Paid</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">TZS <%= Number(contributor.remaining_balance || 0).toLocaleString() %></div>
+          <div class="stat-label">Remaining</div>
+        </div>
+      </div>
+
+      <div class="detail-info">
+        <p><span class="label">Phone:</span> <%= contributor.phone_number || '-' %></p>
+        <p><span class="label">Payment Method:</span> <%= contributor.payment_method || '-' %></p>
+        <p><span class="label">Sender Name:</span> <%= contributor.sender_name || '-' %></p>
+        <p><span class="label">Date:</span> <%= new Date(contributor.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+      </div>
+
+      <div class="notes-section" style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid #f0f0f0;">
+        <label for="notes" style="display:block;font-size:0.85rem;font-weight:500;color:#555;margin-bottom:0.35rem;">Admin Notes</label>
+        <textarea id="notes" rows="3" style="width:100%;padding:0.7rem 0.85rem;font-size:0.9rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;resize:vertical;"><%= contributor.notes || '' %></textarea>
+        <button onclick="saveNotes()" class="btn btn-sm btn-primary" style="margin-top:0.5rem;"><i class="fas fa-save"></i> Save Notes</button>
+        <span id="notesStatus" style="margin-left:0.5rem;font-size:0.85rem;color:#2e7d32;display:none;">Saved</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <h2>Payment History</h2>
+      </div>
+
+      <% if (payments.length === 0) { %>
+        <div class="empty-state">
+          <p>No payment records found.</p>
+        </div>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Amount (TZS)</th>
+                <th>Payment Method</th>
+                <th>Sender Name</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% payments.forEach(function(p, idx) { %>
+                <tr>
+                  <td><%= idx + 1 %></td>
+                  <td><%= Number(p.amount).toLocaleString() %></td>
+                  <td><%= p.payment_method || '-' %></td>
+                  <td><%= p.sender_name || '-' %></td>
+                  <td><%= new Date(p.paid_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) %></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <script>
+    function saveNotes() {
+      var notes = document.getElementById('notes').value;
+      fetch('/admin/events/<%= event.id %>/contributors/<%= contributor.id %>/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: notes })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        var status = document.getElementById('notesStatus');
+        status.style.display = 'inline';
+        status.textContent = 'Saved';
+        setTimeout(function() { status.style.display = 'none'; }, 2000);
+      })
+      .catch(function() { alert('Failed to save notes'); });
+    }
+  </script>
+</body>
+</html>

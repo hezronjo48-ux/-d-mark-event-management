@@ -80,10 +80,89 @@
       </div>
     </div>
 
+    <% if (targetAmount > 0) { %>
+    <div class="event-card" style="margin-bottom:1rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+        <strong>Contribution Goal</strong>
+        <span style="font-size:0.9rem;color:#666;">TZS <%= Number(stats.total_paid).toLocaleString() %> / TZS <%= Number(targetAmount).toLocaleString() %></span>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" style="width:<%= progressPercent %>%;"><%= progressPercent %>%</div>
+      </div>
+    </div>
+    <% } %>
+
     <div class="section">
       <div class="section-header">
         <h2>Contributions</h2>
-        <a href="/admin/export/<%= event.id %>" class="btn btn-gold">Export to Excel</a>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+          <button onclick="document.getElementById('manualEntrySection').style.display = document.getElementById('manualEntrySection').style.display === 'none' ? 'block' : 'none'" class="btn btn-sm btn-secondary"><i class="fas fa-user-plus"></i> Manual Entry</button>
+          <a href="/admin/export/<%= event.id %>" class="btn btn-sm btn-gold">Export Excel</a>
+        </div>
+      </div>
+
+      <div id="manualEntrySection" class="form-card" style="display:none;margin-bottom:1rem;max-width:100%;">
+        <h3 style="margin-bottom:1rem;">Manual Contribution Entry</h3>
+        <form id="manualEntryForm" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group" style="margin:0;">
+            <label>Full Name *</label>
+            <input type="text" id="manual_name" required placeholder="Full name">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Phone Number</label>
+            <input type="text" id="manual_phone" placeholder="Phone number">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Type *</label>
+            <select id="manual_type" onchange="toggleManualType()">
+              <option value="cash">Cash</option>
+              <option value="promise">Promise</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0;" id="manual_promise_group">
+            <label>Promise Amount (TZS) *</label>
+            <input type="number" id="manual_promise" min="1" step="1" placeholder="Promise amount">
+          </div>
+          <div class="form-group" style="margin:0;" id="manual_cash_group">
+            <label>Amount Paid (TZS) *</label>
+            <input type="number" id="manual_amount" min="1" step="1" placeholder="Amount paid">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Payment Method</label>
+            <select id="manual_method">
+              <option value="">Select</option>
+              <option value="Vodacom M-Pesa">Vodacom M-Pesa</option>
+              <option value="Airtel Money">Airtel Money</option>
+              <option value="Mixx by Yas">Mixx by Yas</option>
+              <option value="HaloPesa">HaloPesa</option>
+              <option value="Bank">Bank</option>
+              <option value="Cash">Cash</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Sender Name</label>
+            <input type="text" id="manual_sender" placeholder="Sender name">
+          </div>
+          <div style="grid-column:1/-1;">
+            <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save</button>
+            <span id="manualStatus" class="result-message" style="display:inline;margin-left:0.5rem;"></span>
+          </div>
+        </form>
+      </div>
+
+      <div class="search-bar" style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="searchInput" placeholder="Search by ID, name, or phone..." style="flex:1;min-width:200px;padding:0.5rem 0.75rem;font-size:0.85rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
+        <select id="filterType" style="padding:0.5rem 0.75rem;font-size:0.85rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
+          <option value="">All Types</option>
+          <option value="Promise">Promise</option>
+          <option value="Cash">Cash</option>
+        </select>
+        <select id="filterStatus" style="padding:0.5rem 0.75rem;font-size:0.85rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
+          <option value="">All Status</option>
+          <option value="Done">Done</option>
+          <option value="Incomplete">Incomplete</option>
+        </select>
+        <span style="font-size:0.8rem;color:#888;" id="filterCount"></span>
       </div>
 
       <% if (contributors.length === 0) { %>
@@ -92,9 +171,10 @@
         </div>
       <% } else { %>
         <div class="table-responsive">
-          <table class="table">
+          <table class="table" id="contributorsTable">
             <thead>
               <tr>
+                <th>ID</th>
                 <th>Full Name</th>
                 <th>Phone</th>
                 <th>Type</th>
@@ -103,12 +183,15 @@
                 <th>Balance (TZS)</th>
                 <th>Payment Method</th>
                 <th>Status</th>
+                <th>Notes</th>
                 <th>Date</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
               <% contributors.forEach(c => { %>
-                <tr>
+                <tr data-type="<%= c.contribution_type %>" data-status="<%= c.status %>" data-search="<%= (c.contributor_id || '') + ' ' + c.full_name + ' ' + (c.phone_number || '') %>">
+                  <td><span class="contributor-id-badge"><%= c.contributor_id || '-' %></span></td>
                   <td><%= c.full_name %></td>
                   <td><%= c.phone_number || '-' %></td>
                   <td><%= c.contribution_type %></td>
@@ -121,7 +204,9 @@
                       <%= c.status %>
                     </span>
                   </td>
+                  <td><%= c.notes ? (c.notes.length > 20 ? c.notes.substring(0,20) + '...' : c.notes) : '-' %></td>
                   <td><%= new Date(c.created_at).toLocaleDateString() %></td>
+                  <td><a href="/admin/events/<%= event.id %>/contributors/<%= c.id %>" class="btn btn-sm btn-secondary"><i class="fas fa-eye"></i></a></td>
                 </tr>
               <% }); %>
             </tbody>
@@ -152,6 +237,74 @@
           .catch(function() { alert('Failed to delete event'); });
       }
     }
+
+    function toggleManualType() {
+      var type = document.getElementById('manual_type').value;
+      document.getElementById('manual_promise_group').style.display = type === 'promise' ? 'block' : 'none';
+      document.getElementById('manual_cash_group').style.display = type === 'cash' ? 'block' : 'none';
+    }
+    document.addEventListener('DOMContentLoaded', toggleManualType);
+
+    document.getElementById('manualEntryForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var data = {
+        full_name: document.getElementById('manual_name').value,
+        phone_number: document.getElementById('manual_phone').value,
+        contribution_type: document.getElementById('manual_type').value,
+        promise_amount: document.getElementById('manual_promise').value,
+        amount_paid: document.getElementById('manual_amount').value,
+        payment_method: document.getElementById('manual_method').value,
+        sender_name: document.getElementById('manual_sender').value
+      };
+      fetch('/admin/events/<%= event.id %>/contributors/manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        var status = document.getElementById('manualStatus');
+        if (d.success) {
+          status.className = 'result-message success';
+          status.textContent = 'Added!';
+          status.style.display = 'inline';
+          setTimeout(function() { window.location.reload(); }, 1000);
+        } else {
+          status.className = 'result-message error';
+          status.textContent = d.error || 'Failed';
+          status.style.display = 'inline';
+        }
+      })
+      .catch(function() {
+        var status = document.getElementById('manualStatus');
+        status.className = 'result-message error';
+        status.textContent = 'Error';
+        status.style.display = 'inline';
+      });
+    });
+
+    function filterTable() {
+      var query = document.getElementById('searchInput').value.toLowerCase();
+      var typeFilter = document.getElementById('filterType').value;
+      var statusFilter = document.getElementById('filterStatus').value;
+      var rows = document.querySelectorAll('#contributorsTable tbody tr');
+      var count = 0;
+      rows.forEach(function(row) {
+        var searchText = row.getAttribute('data-search').toLowerCase();
+        var type = row.getAttribute('data-type');
+        var status = row.getAttribute('data-status');
+        var match = (!query || searchText.indexOf(query) !== -1) &&
+                     (!typeFilter || type === typeFilter) &&
+                     (!statusFilter || status === statusFilter);
+        row.style.display = match ? '' : 'none';
+        if (match) count++;
+      });
+      document.getElementById('filterCount').textContent = count + ' of ' + rows.length;
+    }
+
+    document.getElementById('searchInput').addEventListener('input', filterTable);
+    document.getElementById('filterType').addEventListener('change', filterTable);
+    document.getElementById('filterStatus').addEventListener('change', filterTable);
   </script>
 </body>
 </html>
