@@ -120,7 +120,8 @@ async function main() {
     }
 
     try {
-      const uniqueLink = crypto.randomBytes(6).toString('hex');
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').substring(0, 50);
+      const uniqueLink = slug + '-' + crypto.randomBytes(4).toString('hex');
       const result = db.prepare(
         'INSERT INTO events (name, event_type, groom_name, bride_name, person1_name, person2_name, event_date, venue, unique_link, target_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
       ).run([name, type, groom_name || '-', bride_name || '-', person1_name || null, person2_name || null, event_date || null, venue || null, uniqueLink, parseFloat(target_amount) || 0]);
