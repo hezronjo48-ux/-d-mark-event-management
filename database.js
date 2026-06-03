@@ -111,17 +111,6 @@ async function init() {
   try { _db.run('ALTER TABLE events ADD COLUMN person2_name TEXT'); } catch(e) {}
   try { _db.run('ALTER TABLE events ADD COLUMN target_amount REAL DEFAULT 0'); } catch(e) {}
 
-  try { _db.run('ALTER TABLE contributors ADD COLUMN contributor_id TEXT'); } catch(e) {}
-  try { _db.run('ALTER TABLE contributors ADD COLUMN notes TEXT'); } catch(e) {}
-
-  const missingResult = _db.exec('SELECT id FROM contributors WHERE contributor_id IS NULL ORDER BY id');
-  if (missingResult.length > 0 && missingResult[0].values) {
-    for (const row of missingResult[0].values) {
-      _db.run('UPDATE contributors SET contributor_id = ? WHERE id = ?', ['CNT-' + String(row[0]).padStart(3, '0'), row[0]]);
-    }
-    save();
-  }
-
   _db.run(`
     CREATE TABLE IF NOT EXISTS contributors (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -151,6 +140,17 @@ async function init() {
       FOREIGN KEY (contributor_id) REFERENCES contributors(id)
     )
   `);
+
+  try { _db.run('ALTER TABLE contributors ADD COLUMN contributor_id TEXT'); } catch(e) {}
+  try { _db.run('ALTER TABLE contributors ADD COLUMN notes TEXT'); } catch(e) {}
+
+  const missingResult = _db.exec('SELECT id FROM contributors WHERE contributor_id IS NULL ORDER BY id');
+  if (missingResult.length > 0 && missingResult[0].values) {
+    for (const row of missingResult[0].values) {
+      _db.run('UPDATE contributors SET contributor_id = ? WHERE id = ?', ['CNT-' + String(row[0]).padStart(3, '0'), row[0]]);
+    }
+    save();
+  }
 
   save();
 
