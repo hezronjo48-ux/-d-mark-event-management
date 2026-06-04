@@ -836,6 +836,19 @@ nav {
   font-size: 0.9rem;
 }
 
+.match-card {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  transition: border-color 0.2s;
+}
+
+.match-card:hover {
+  border-color: #1a237e;
+}
+
 .notes-section textarea {
   transition: border-color 0.2s;
 }
