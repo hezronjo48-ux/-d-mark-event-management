@@ -291,6 +291,18 @@ async function main() {
     }
   });
 
+  app.post('/api/promise/list', (req, res) => {
+    const { event_id } = req.body;
+    try {
+      const promises = db.prepare(
+        "SELECT * FROM contributors WHERE event_id = ? AND contribution_type = 'Promise' ORDER BY full_name ASC"
+      ).all([event_id]);
+      res.json({ promises });
+    } catch (err) {
+      res.status(500).json({ error: 'An error occurred' });
+    }
+  });
+
   app.post('/api/promise/search', (req, res) => {
     const { event_id, full_name, contributor_id } = req.body;
     const input = (full_name || contributor_id || '').trim();

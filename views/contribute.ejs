@@ -96,6 +96,9 @@
             <input type="text" id="search_name" placeholder="Enter your full name or CNT-001">
           </div>
           <button onclick="searchPromise()" class="btn btn-primary btn-full">Search</button>
+          <div style="text-align:center;margin-top:0.75rem;">
+            <button onclick="browseAllPromises()" class="btn btn-sm btn-secondary" style="font-size:0.8rem;"><i class="fas fa-list"></i> Browse All Promises</button>
+          </div>
         </div>
 
         <div id="searchResultsList" style="display:none;">
@@ -245,6 +248,57 @@
         resultDiv.textContent = 'An error occurred. Please try again.';
       });
     });
+
+    function browseAllPromises() {
+      var searchSection = document.getElementById('searchSection');
+      var searchResultsList = document.getElementById('searchResultsList');
+      var resultDiv = document.getElementById('searchResult');
+      var container = document.getElementById('matchesContainer');
+
+      resultDiv.className = 'result-message';
+      resultDiv.style.display = 'none';
+      container.innerHTML = '<p style="text-align:center;color:#888;padding:1rem;">Loading...</p>';
+      searchResultsList.style.display = 'block';
+
+      fetch('/api/promise/list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event_id: '<%= event.id %>' })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(result) {
+        container.innerHTML = '';
+        if (result.promises && result.promises.length > 0) {
+          window._promiseMatches = result.promises;
+          result.promises.forEach(function(p) {
+            var card = document.createElement('div');
+            card.className = 'match-card';
+            card.innerHTML =
+              '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">' +
+              '  <div>' +
+              '    <strong>' + p.full_name + '</strong>' +
+              '    <span class="contributor-id-badge" style="margin-left:0.5rem;">' + (p.contributor_id || '-') + '</span>' +
+              '  </div>' +
+              '  <span class="badge ' + (p.status === 'Done' ? 'badge-success' : 'badge-warning') + '">' + p.status + '</span>' +
+              '</div>' +
+              '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;margin-top:0.5rem;font-size:0.8rem;color:#666;">' +
+              '  <div>Promise: TZS ' + Number(p.promise_amount).toLocaleString() + '</div>' +
+              '  <div>Paid: TZS ' + Number(p.paid_amount).toLocaleString() + '</div>' +
+              '  <div>Balance: TZS ' + Number(p.remaining_balance).toLocaleString() + '</div>' +
+              '</div>' +
+              '<button onclick="selectPromise(' + p.id + ')" class="btn btn-sm btn-primary" style="margin-top:0.5rem;width:100%;">Select</button>';
+            container.appendChild(card);
+          });
+          searchSection.style.display = 'none';
+        } else {
+          container.innerHTML = '<p style="text-align:center;color:#888;padding:1rem;">No promises found for this event.</p>';
+          searchSection.style.display = 'none';
+        }
+      })
+      .catch(function() {
+        container.innerHTML = '<p style="text-align:center;color:#c62828;padding:1rem;">Failed to load. Try again.</p>';
+      });
+    }
 
     function showPromiseDetails(promise) {
       document.getElementById('displayContributorId').textContent = promise.contributor_id || '-';
