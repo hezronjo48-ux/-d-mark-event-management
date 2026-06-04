@@ -1,6 +1,7 @@
 const initSqlJs = require('sql.js');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 
 const dataDir = path.join(__dirname, 'data');
@@ -110,6 +111,7 @@ async function init() {
   try { _db.run('ALTER TABLE events ADD COLUMN person1_name TEXT'); } catch(e) {}
   try { _db.run('ALTER TABLE events ADD COLUMN person2_name TEXT'); } catch(e) {}
   try { _db.run('ALTER TABLE events ADD COLUMN target_amount REAL DEFAULT 0'); } catch(e) {}
+  try { _db.run('ALTER TABLE events ADD COLUMN manage_token TEXT'); } catch(e) {}
 
   _db.run(`
     CREATE TABLE IF NOT EXISTS contributors (
@@ -148,6 +150,14 @@ async function init() {
   if (missingResult.length > 0 && missingResult[0].values) {
     for (const row of missingResult[0].values) {
       _db.run('UPDATE contributors SET contributor_id = ? WHERE id = ?', ['CNT-' + String(row[0]).padStart(3, '0'), row[0]]);
+    }
+    save();
+  }
+
+  const missingManage = _db.exec('SELECT id FROM events WHERE manage_token IS NULL');
+  if (missingManage.length > 0 && missingManage[0].values) {
+    for (const row of missingManage[0].values) {
+      _db.run('UPDATE events SET manage_token = ? WHERE id = ?', [crypto.randomBytes(8).toString('hex'), row[0]]);
     }
     save();
   }

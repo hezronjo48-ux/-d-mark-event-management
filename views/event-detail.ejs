@@ -59,6 +59,16 @@
         </div>
         <p style="font-size:0.8rem;color:#888;margin-top:0.5rem;">Share this link with guests to collect contributions.</p>
       </div>
+
+      <div class="link-section" style="border-top-color:#e8eaf6;">
+        <label>Event Management Link <span style="font-weight:400;color:#888;font-size:0.75rem;">(for event owner — no login needed)</span></label>
+        <div class="link-copy">
+          <input type="text" id="manageLink" value="<%= manageLink %>" readonly>
+          <a href="<%= manageLink %>" target="_blank" class="btn btn-sm btn-secondary"><i class="fas fa-external-link-alt"></i> Open</a>
+          <button class="btn btn-sm btn-secondary" onclick="copyManageLink()"><i class="fas fa-copy"></i> Copy</button>
+        </div>
+        <p style="font-size:0.8rem;color:#888;margin-top:0.5rem;">The event owner can view stats, contributions, and export without logging in.</p>
+      </div>
     </div>
 
     <div class="stats-grid">
@@ -219,6 +229,15 @@
   <script>
     function copyLink() {
       const input = document.getElementById('contributionLink');
+      input.select();
+      document.execCommand('copy');
+      const btn = event.target;
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+      setTimeout(() => { btn.innerHTML = orig; }, 2000);
+    }
+    function copyManageLink() {
+      const input = document.getElementById('manageLink');
       input.select();
       document.execCommand('copy');
       const btn = event.target;

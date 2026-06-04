@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= event.name %> - Event Dashboard</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+  <nav style="background:linear-gradient(135deg,#1a237e,#283593);">
+    <div class="nav-container">
+      <div class="nav-brand">D MARK EVENT MANAGEMENT</div>
+      <div class="nav-links">
+        <a href="<%= contributionLink %>" target="_blank"><i class="fas fa-external-link-alt"></i> Contribute</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="event-card" style="text-align:center;">
+      <h1><%= event.name %></h1>
+      <div class="event-details" style="text-align:center;">
+        <p><span class="label">Type:</span> <span class="event-type-label"><%= event.event_type || 'Wedding' %></span></p>
+        <% if (event.event_type === 'Wedding') { %>
+          <p><span class="label">Groom:</span> <%= event.groom_name %> &nbsp;|&nbsp; <span class="label">Bride:</span> <%= event.bride_name %></p>
+        <% } else if (event.event_type === 'Anniversary') { %>
+          <p><span class="label">Person 1:</span> <%= event.person1_name %> &nbsp;|&nbsp; <span class="label">Person 2:</span> <%= event.person2_name %></p>
+        <% } else { %>
+          <p><span class="label">Name:</span> <%= event.person1_name %></p>
+        <% } %>
+        <% if (event.event_date) { %>
+          <p><span class="label">Date:</span> <%= new Date(event.event_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+        <% } %>
+        <% if (event.venue) { %>
+          <p><span class="label">Venue:</span> <%= event.venue %></p>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">TZS <%= Number(stats.total_promised).toLocaleString() %></div>
+        <div class="stat-label">Total Promised</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">TZS <%= Number(stats.total_paid).toLocaleString() %></div>
+        <div class="stat-label">Total Collected</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">TZS <%= Number(stats.total_remaining).toLocaleString() %></div>
+        <div class="stat-label">Total Remaining</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value"><%= stats.contributor_count %></div>
+        <div class="stat-label">Contributors</div>
+      </div>
+    </div>
+
+    <% if (targetAmount > 0) { %>
+    <div class="event-card" style="margin-bottom:1rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+        <strong>Contribution Goal</strong>
+        <span style="font-size:0.9rem;color:#666;">TZS <%= Number(stats.total_paid).toLocaleString() %> / TZS <%= Number(targetAmount).toLocaleString() %></span>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" style="width:<%= progressPercent %>%;"><%= progressPercent %>%</div>
+      </div>
+    </div>
+    <% } %>
+
+    <div class="section">
+      <div class="section-header">
+        <h2>Contributions</h2>
+        <a href="/admin/export/<%= event.id %>" class="btn btn-sm btn-gold" target="_blank">Export Excel</a>
+      </div>
+
+      <div class="search-bar" style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="searchInput" placeholder="Search by ID, name, or phone..." style="flex:1;min-width:200px;padding:0.5rem 0.75rem;font-size:0.85rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
+        <select id="filterType" style="padding:0.5rem 0.75rem;font-size:0.85rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
+          <option value="">All Types</option>
+          <option value="Promise">Promise</option>
+          <option value="Cash">Cash</option>
+        </select>
+        <select id="filterStatus" style="padding:0.5rem 0.75rem;font-size:0.85rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
+          <option value="">All Status</option>
+          <option value="Done">Done</option>
+          <option value="Incomplete">Incomplete</option>
+        </select>
+        <span style="font-size:0.8rem;color:#888;" id="filterCount"></span>
+      </div>
+
+      <% if (contributors.length === 0) { %>
+        <div class="empty-state">
+          <p>No contributions yet. Share the contribution link with your guests.</p>
+        </div>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table" id="contributorsTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Full Name</th>
+                <th>Phone</th>
+                <th>Type</th>
+                <th>Promise (TZS)</th>
+                <th>Paid (TZS)</th>
+                <th>Balance (TZS)</th>
+                <th>Payment Method</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% contributors.forEach(c => { %>
+                <tr data-type="<%= c.contribution_type %>" data-status="<%= c.status %>" data-search="<%= (c.contributor_id || '') + ' ' + c.full_name + ' ' + (c.phone_number || '') %>">
+                  <td><span class="contributor-id-badge"><%= c.contributor_id || '-' %></span></td>
+                  <td><%= c.full_name %></td>
+                  <td><%= c.phone_number || '-' %></td>
+                  <td><%= c.contribution_type %></td>
+                  <td><%= c.promise_amount > 0 ? Number(c.promise_amount).toLocaleString() : '-' %></td>
+                  <td><%= Number(c.paid_amount).toLocaleString() %></td>
+                  <td><%= Number(c.remaining_balance).toLocaleString() %></td>
+                  <td><%= c.payment_method || '-' %></td>
+                  <td>
+                    <span class="badge <%= c.status === 'Done' ? 'badge-success' : 'badge-warning' %>"><%= c.status %></span>
+                  </td>
+                  <td><%= new Date(c.created_at).toLocaleDateString() %></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <script>
+    function filterTable() {
+      var query = document.getElementById('searchInput').value.toLowerCase();
+      var typeFilter = document.getElementById('filterType').value;
+      var statusFilter = document.getElementById('filterStatus').value;
+      var rows = document.querySelectorAll('#contributorsTable tbody tr');
+      var count = 0;
+      rows.forEach(function(row) {
+        var searchText = row.getAttribute('data-search').toLowerCase();
+        var type = row.getAttribute('data-type');
+        var status = row.getAttribute('data-status');
+        var match = (!query || searchText.indexOf(query) !== -1) &&
+                     (!typeFilter || type === typeFilter) &&
+                     (!statusFilter || status === statusFilter);
+        row.style.display = match ? '' : 'none';
+        if (match) count++;
+      });
+      document.getElementById('filterCount').textContent = count + ' of ' + rows.length;
+    }
+
+    document.getElementById('searchInput').addEventListener('input', filterTable);
+    document.getElementById('filterType').addEventListener('change', filterTable);
+    document.getElementById('filterStatus').addEventListener('change', filterTable);
+  </script>
+</body>
+</html>

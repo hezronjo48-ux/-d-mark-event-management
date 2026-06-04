@@ -122,13 +122,40 @@ async function main() {
     try {
       const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').substring(0, 50);
       const uniqueLink = slug + '-' + crypto.randomBytes(4).toString('hex');
+      const manageToken = crypto.randomBytes(8).toString('hex');
       const result = db.prepare(
-        'INSERT INTO events (name, event_type, groom_name, bride_name, person1_name, person2_name, event_date, venue, unique_link, target_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-      ).run([name, type, groom_name || '-', bride_name || '-', person1_name || null, person2_name || null, event_date || null, venue || null, uniqueLink, parseFloat(target_amount) || 0]);
+        'INSERT INTO events (name, event_type, groom_name, bride_name, person1_name, person2_name, event_date, venue, unique_link, target_amount, manage_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      ).run([name, type, groom_name || '-', bride_name || '-', person1_name || null, person2_name || null, event_date || null, venue || null, uniqueLink, parseFloat(target_amount) || 0, manageToken]);
 
       res.redirect(`/admin/events/${result.lastInsertRowid}`);
     } catch (err) {
       res.render('create-event', { error: 'Failed to create event', form: formData() });
+    }
+  });
+
+  app.get('/manage/:token', (req, res) => {
+    try {
+      const event = db.prepare('SELECT * FROM events WHERE manage_token = ?').get([req.params.token]);
+      if (!event) {
+        return res.status(404).send('Invalid management link');
+      }
+      const contributors = db.prepare(
+        'SELECT * FROM contributors WHERE event_id = ? ORDER BY created_at DESC'
+      ).all([event.id]);
+      const eventStats = db.prepare(`
+        SELECT
+          COALESCE(SUM(promise_amount), 0) as total_promised,
+          COALESCE(SUM(paid_amount), 0) as total_paid,
+          COALESCE(SUM(remaining_balance), 0) as total_remaining,
+          COUNT(*) as contributor_count
+        FROM contributors WHERE event_id = ?
+      `).get([event.id]);
+      const targetAmount = event.target_amount || 0;
+      const progressPercent = targetAmount > 0 ? Math.min(100, Math.round((eventStats.total_paid / targetAmount) * 100)) : 0;
+      const contributionLink = `${req.protocol}://${req.get('host')}/c/${event.unique_link}`;
+      res.render('event-manage', { event, contributors, stats: eventStats, targetAmount, progressPercent, contributionLink });
+    } catch (err) {
+      res.status(500).send('An error occurred');
     }
   });
 
@@ -153,11 +180,12 @@ async function main() {
       `).get([req.params.id]);
 
       const contributionLink = `${req.protocol}://${req.get('host')}/c/${event.unique_link}`;
+      const manageLink = `${req.protocol}://${req.get('host')}/manage/${event.manage_token}`;
 
       const targetAmount = event.target_amount || 0;
       const progressPercent = targetAmount > 0 ? Math.min(100, Math.round((eventStats.total_paid / targetAmount) * 100)) : 0;
 
-      res.render('event-detail', { event, contributors, stats: eventStats, contributionLink, targetAmount, progressPercent });
+      res.render('event-detail', { event, contributors, stats: eventStats, contributionLink, manageLink, targetAmount, progressPercent });
     } catch (err) {
       res.status(500).send('An error occurred');
     }
