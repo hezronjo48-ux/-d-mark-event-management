@@ -48,6 +48,7 @@ async function main() {
       if (admin && bcrypt.compareSync(password, admin.password_hash)) {
         req.session.isAdmin = true;
         req.session.adminId = admin.id;
+        logActivity('Login', 'Admin logged in');
         return res.redirect('/admin/dashboard');
       }
       res.render('login', { error: 'Invalid username or password' });
@@ -69,6 +70,10 @@ async function main() {
     return db.prepare("SELECT COUNT(*) as count FROM notifications WHERE is_read = 0").get([]).count;
   }
 
+  function logActivity(action, details) {
+    db.prepare('INSERT INTO activity_log (action, details) VALUES (?, ?)').run([action, details]);
+  }
+
   app.get('/api/notifications', requireAuth, (req, res) => {
     const notifications = db.prepare('SELECT * FROM notifications ORDER BY created_at DESC LIMIT 50').all([]);
     const unread = db.prepare("SELECT COUNT(*) as count FROM notifications WHERE is_read = 0").get([]).count;
@@ -80,6 +85,11 @@ async function main() {
     res.json({ success: true });
   });
 
+  app.get('/admin/activity-log', requireAuth, (req, res) => {
+    const logs = db.prepare('SELECT * FROM activity_log ORDER BY created_at DESC LIMIT 100').all([]);
+    res.render('activity-log', { logs, unreadCount: getUnreadCount() });
+  });
+
   app.post('/admin/events/:id/status', requireAuth, (req, res) => {
     const { status } = req.body;
     if (!['Active', 'Completed', 'Archived'].includes(status)) {
@@ -87,6 +97,8 @@ async function main() {
     }
     db.prepare('UPDATE events SET status = ? WHERE id = ?').run([status, req.params.id]);
     res.json({ success: true });
+    const ev = db.prepare('SELECT name FROM events WHERE id = ?').get([req.params.id]);
+    logActivity('Status Change', 'Event "' + (ev ? ev.name : '') + '" set to ' + status);
   });
 
   app.get('/admin/dashboard', requireAuth, (req, res) => {
@@ -168,6 +180,7 @@ async function main() {
       ).run([name, type, groom_name || '-', bride_name || '-', person1_name || null, person2_name || null, event_date || null, venue || null, uniqueLink, parseFloat(target_amount) || 0, manageToken]);
 
       res.redirect(`/admin/events/${result.lastInsertRowid}`);
+      logActivity('Create Event', 'Created event: ' + name);
     } catch (err) {
       res.render('create-event', { error: 'Failed to create event', form: formData() });
     }
@@ -520,6 +533,7 @@ async function main() {
           .run([contributorId, amount, payment_method || '-', sender_name || full_name.trim()]);
       }
       res.json({ success: true, message: 'Contribution added successfully' });
+      logActivity('Manual Entry', 'Added ' + (contribution_type === 'promise' ? 'promise' : 'cash contribution') + ' for ' + full_name.trim() + ' in event #' + req.params.id);
     } catch (err) {
       res.status(500).json({ error: 'Failed to add contribution' });
     }
@@ -549,6 +563,7 @@ async function main() {
       db.prepare('DELETE FROM contributors WHERE event_id = ?').run([req.params.id]);
       db.prepare('DELETE FROM events WHERE id = ?').run([req.params.id]);
       res.json({ success: true });
+      logActivity('Delete Event', 'Deleted event: ' + event.name);
     } catch (err) {
       res.status(500).json({ error: 'Failed to delete event' });
     }

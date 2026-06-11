@@ -155,6 +155,15 @@ async function init() {
     )
   `);
 
+  _db.run(`
+    CREATE TABLE IF NOT EXISTS activity_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      action TEXT NOT NULL,
+      details TEXT,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )
+  `);
+
   try { _db.run('ALTER TABLE contributors ADD COLUMN contributor_id TEXT'); } catch(e) {}
   try { _db.run('ALTER TABLE contributors ADD COLUMN notes TEXT'); } catch(e) {}
 
