@@ -50,11 +50,12 @@ nav {
 .nav-brand {
   font-family: 'Playfair Display', Georgia, serif;
   color: #d4af37;
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   position: relative;
-  padding-left: 1.75rem;
+  padding-left: 2.25rem;
+  text-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
 }
 
 .nav-brand::before {
@@ -65,9 +66,10 @@ nav {
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 1rem;
+  font-size: 1.15rem;
   color: #d4af37;
-  opacity: 0.8;
+  text-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
+  opacity: 0.95;
 }
 
 .nav-brand::after {
