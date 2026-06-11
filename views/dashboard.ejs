@@ -15,6 +15,7 @@
       <div class="nav-links">
         <a href="/admin/dashboard" class="active">Dashboard</a>
         <a href="/admin/events/create">Create Event</a>
+        <a href="/admin/debtors">Debtors</a>
         <a href="/admin/activity-log">Activity Log</a>
         <a href="javascript:void(0)" onclick="toggleNotifications()" class="notif-bell" style="position:relative;">
           <i class="fas fa-bell"></i>
@@ -45,6 +46,26 @@
         <div class="stat-value">TZS <%= Number(stats.total_remaining).toLocaleString() %></div>
         <div class="stat-label">Total Remaining</div>
       </div>
+    </div>
+
+    <div class="section" style="margin-top:0;">
+      <h2 style="font-size:1.2rem;">Collection Progress</h2>
+      <% if (chartData.length === 0) { %>
+        <p style="color:#888;font-size:0.85rem;">No data yet.</p>
+      <% } else { %>
+        <div class="chart-container">
+          <% chartData.forEach(function(d) { %>
+            <% var pct = maxChartVal > 0 ? Math.round((d.collected / maxChartVal) * 100) : 0; %>
+            <div class="chart-row">
+              <div class="chart-label"><%= d.name.length > 20 ? d.name.substring(0,20)+'...' : d.name %></div>
+              <div class="chart-bar-wrap">
+                <div class="chart-bar" style="width:<%= pct %>%;"></div>
+              </div>
+              <div class="chart-value">TZS <%= Number(d.collected).toLocaleString() %></div>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
     </div>
 
     <div class="section">

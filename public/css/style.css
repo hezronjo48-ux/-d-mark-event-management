@@ -1017,6 +1017,54 @@ nav {
   }
 }
 
+.chart-container {
+  background: #fff;
+  border-radius: 10px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.chart-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.chart-label {
+  width: 140px;
+  font-size: 0.8rem;
+  color: #333;
+  font-weight: 500;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.chart-bar-wrap {
+  flex: 1;
+  height: 22px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.chart-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #283593, #1a237e);
+  border-radius: 4px;
+  transition: width 0.6s ease;
+  min-width: 2px;
+}
+
+.chart-value {
+  width: 120px;
+  font-size: 0.78rem;
+  color: #555;
+  font-weight: 500;
+  text-align: right;
+  flex-shrink: 0;
+}
+
 .notes-section textarea {
   transition: border-color 0.2s;
 }

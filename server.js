@@ -90,6 +90,17 @@ async function main() {
     res.render('activity-log', { logs, unreadCount: getUnreadCount() });
   });
 
+  app.get('/admin/debtors', requireAuth, (req, res) => {
+    const debtors = db.prepare(`
+      SELECT c.*, e.name as event_name
+      FROM contributors c
+      JOIN events e ON e.id = c.event_id
+      WHERE c.status = 'Incomplete' AND c.contribution_type = 'Promise'
+      ORDER BY c.remaining_balance DESC
+    `).all([]);
+    res.render('debtors', { debtors, unreadCount: getUnreadCount() });
+  });
+
   app.post('/admin/events/:id/status', requireAuth, (req, res) => {
     const { status } = req.body;
     if (!['Active', 'Completed', 'Archived'].includes(status)) {
@@ -121,17 +132,26 @@ async function main() {
       const eventStats = db.prepare(`
         SELECT event_id,
           COUNT(*) as c_count,
-          COALESCE(SUM(CASE WHEN contribution_type = 'Promise' THEN paid_amount ELSE 0 END), 0) + COALESCE(SUM(CASE WHEN contribution_type = 'Cash' THEN paid_amount ELSE 0 END), 0) as c_collected
+          COALESCE(SUM(promise_amount), 0) as c_promised,
+          COALESCE(SUM(paid_amount), 0) as c_collected
         FROM contributors GROUP BY event_id
       `).all([]);
 
       const statsMap = {};
       eventStats.forEach(function(s) { statsMap[s.event_id] = s; });
 
+      const chartData = events.map(function(e) {
+        var s = statsMap[e.id] || { c_collected: 0, c_promised: 0, c_count: 0 };
+        return { name: e.name, collected: s.c_collected, promised: s.c_promised };
+      });
+      var maxVal = chartData.reduce(function(m, d) { return Math.max(m, d.collected); }, 0);
+
       res.render('dashboard', {
         events,
         stats: allStats,
         statsMap: statsMap,
+        chartData: chartData,
+        maxChartVal: maxVal,
         unreadCount: getUnreadCount()
       });
     } catch (err) {
