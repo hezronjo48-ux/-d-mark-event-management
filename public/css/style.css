@@ -53,23 +53,7 @@ nav {
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: 2px;
-  position: relative;
-  padding-left: 2.25rem;
   text-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
-}
-
-.nav-brand::before {
-  content: '\f0f9';
-  font-family: 'Font Awesome 6 Free';
-  font-weight: 900;
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 1.15rem;
-  color: #d4af37;
-  text-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
-  opacity: 0.95;
 }
 
 .nav-brand::after {
