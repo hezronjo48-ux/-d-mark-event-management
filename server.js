@@ -61,6 +61,25 @@ async function main() {
     res.redirect('/admin/login');
   });
 
+  function addNotification(eventId, type, message) {
+    db.prepare('INSERT INTO notifications (event_id, type, message) VALUES (?, ?, ?)').run([eventId, type, message]);
+  }
+
+  function getUnreadCount() {
+    return db.prepare("SELECT COUNT(*) as count FROM notifications WHERE is_read = 0").get([]).count;
+  }
+
+  app.get('/api/notifications', requireAuth, (req, res) => {
+    const notifications = db.prepare('SELECT * FROM notifications ORDER BY created_at DESC LIMIT 50').all([]);
+    const unread = db.prepare("SELECT COUNT(*) as count FROM notifications WHERE is_read = 0").get([]).count;
+    res.json({ notifications, unread });
+  });
+
+  app.post('/api/notifications/read', requireAuth, (req, res) => {
+    db.prepare("UPDATE notifications SET is_read = 1 WHERE is_read = 0").run([]);
+    res.json({ success: true });
+  });
+
   app.get('/admin/dashboard', requireAuth, (req, res) => {
     try {
       const events = db.prepare('SELECT * FROM events ORDER BY created_at DESC').all([]);
@@ -80,7 +99,8 @@ async function main() {
 
       res.render('dashboard', {
         events,
-        stats
+        stats,
+        unreadCount: getUnreadCount()
       });
     } catch (err) {
       res.status(500).send('An error occurred');
@@ -88,7 +108,7 @@ async function main() {
   });
 
   app.get('/admin/events/create', requireAuth, (req, res) => {
-    res.render('create-event', { error: null, form: null });
+    res.render('create-event', { error: null, form: null, unreadCount: getUnreadCount() });
   });
 
   app.post('/admin/events/create', requireAuth, (req, res) => {
@@ -185,7 +205,7 @@ async function main() {
       const targetAmount = event.target_amount || 0;
       const progressPercent = targetAmount > 0 ? Math.min(100, Math.round((eventStats.total_paid / targetAmount) * 100)) : 0;
 
-      res.render('event-detail', { event, contributors, stats: eventStats, contributionLink, manageLink, targetAmount, progressPercent });
+      res.render('event-detail', { event, contributors, stats: eventStats, contributionLink, manageLink, targetAmount, progressPercent, unreadCount: getUnreadCount() });
     } catch (err) {
       res.status(500).send('An error occurred');
     }
@@ -314,6 +334,8 @@ async function main() {
       }
 
       res.json({ success: true, message: 'Contribution recorded successfully!', contributor_id: 'CNT-' + String(contributorId).padStart(3, '0') });
+      addNotification(event_id, contribution_type === 'promise' ? 'new_promise' : 'new_cash',
+        (contribution_type === 'promise' ? full_name.trim() + ' made a promise' : full_name.trim() + ' contributed cash') + ' for ' + event.name);
     } catch (err) {
       res.status(500).json({ error: 'An error occurred while saving your contribution' });
     }
@@ -386,6 +408,11 @@ async function main() {
       db.prepare('INSERT INTO payments (contributor_id, amount, payment_method, sender_name) VALUES (?, ?, ?, ?)')
         .run([contributor_id, payAmount, payment_method || '-', sender_name || contributor.full_name]);
 
+      if (newStatus === 'Done') {
+        const ev = db.prepare('SELECT name FROM events WHERE id = ?').get([contributor.event_id]);
+        addNotification(contributor.event_id, 'fulfilled', contributor.full_name + ' fulfilled their promise for ' + (ev ? ev.name : 'the event'));
+      }
+
       res.json({
         success: true,
         message: 'Payment recorded successfully!',
@@ -408,7 +435,7 @@ async function main() {
       }
       const event = db.prepare('SELECT * FROM events WHERE id = ?').get([req.params.id]);
       const payments = db.prepare('SELECT * FROM payments WHERE contributor_id = ? ORDER BY paid_at DESC').all([req.params.cid]);
-      res.render('contributor-detail', { contributor, event, payments });
+      res.render('contributor-detail', { contributor, event, payments, unreadCount: getUnreadCount() });
     } catch (err) {
       res.status(500).send('An error occurred');
     }

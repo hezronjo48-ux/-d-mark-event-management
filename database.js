@@ -143,6 +143,17 @@ async function init() {
     )
   `);
 
+  _db.run(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id INTEGER,
+      type TEXT NOT NULL,
+      message TEXT NOT NULL,
+      is_read INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    )
+  `);
+
   try { _db.run('ALTER TABLE contributors ADD COLUMN contributor_id TEXT'); } catch(e) {}
   try { _db.run('ALTER TABLE contributors ADD COLUMN notes TEXT'); } catch(e) {}
 
