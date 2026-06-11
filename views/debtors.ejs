@@ -7,6 +7,11 @@
   <link rel="stylesheet" href="/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .event-section { margin-bottom: 2rem; }
+    .event-section h3 { font-size:1rem; color:#1a237e; margin-bottom:0.5rem; border-bottom:2px solid #e0e0e0; padding-bottom:0.4rem; }
+    .event-section .event-total { font-size:0.8rem; color:#888; margin-bottom:0.8rem; }
+  </style>
 </head>
 <body>
   <nav>
@@ -29,59 +34,68 @@
   <div class="container">
     <div class="page-header">
       <h1>Debtors List</h1>
-      <p style="color:#888;font-size:0.85rem;">Contributors with incomplete promises</p>
+      <p style="color:#888;font-size:0.85rem;">Contributors with incomplete promises, grouped by event</p>
     </div>
+
+    <% var allKeys = Object.keys(grouped); %>
+    <% var totalOutstanding = 0; allKeys.forEach(function(k) { grouped[k].forEach(function(d) { totalOutstanding += Number(d.remaining_balance||0); }); }); %>
 
     <div class="stats-grid" style="margin-bottom:1.5rem;">
       <div class="stat-card">
-        <div class="stat-value"><%= debtors.length %></div>
-        <div class="stat-label">Debtors</div>
+        <div class="stat-value"><%= allKeys.length %></div>
+        <div class="stat-label">Events with Debtors</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value">TZS <%= Number(debtors.reduce(function(s,c){return s+Number(c.remaining_balance||0);},0)).toLocaleString() %></div>
+        <div class="stat-value">TZS <%= Number(totalOutstanding).toLocaleString() %></div>
         <div class="stat-label">Total Outstanding</div>
       </div>
     </div>
 
-    <% if (debtors.length === 0) { %>
+    <% if (allKeys.length === 0) { %>
       <div class="empty-state"><p>No debtors. All promises fulfilled!</p></div>
     <% } else { %>
-      <div class="table-responsive">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Event</th>
-              <th>Promised (TZS)</th>
-              <th>Paid (TZS)</th>
-              <th>Balance (TZS)</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% debtors.forEach(function(d) { %>
-              <tr>
-                <td><span class="contributor-id-badge"><%= d.contributor_id || '-' %></span></td>
-                <td><strong><%= d.full_name %></strong></td>
-                <td>
-                  <% if (d.phone_number) { %>
-                    <a href="tel:<%= d.phone_number %>" style="color:#1a237e;"><i class="fas fa-phone"></i> <%= d.phone_number %></a>
-                  <% } else { %>
-                    -
-                  <% } %>
-                </td>
-                <td><%= d.event_name %></td>
-                <td><%= Number(d.promise_amount).toLocaleString() %></td>
-                <td><%= Number(d.paid_amount).toLocaleString() %></td>
-                <td><strong style="color:#c62828;"><%= Number(d.remaining_balance).toLocaleString() %></strong></td>
-                <td><a href="/admin/events/<%= d.event_id %>/contributors/<%= d.id %>" class="btn btn-sm btn-secondary"><i class="fas fa-eye"></i></a></td>
-              </tr>
-            <% }); %>
-          </tbody>
-        </table>
-      </div>
+      <% allKeys.forEach(function(eventName) { %>
+        <% var evDebtors = grouped[eventName]; %>
+        <% var evTotal = evDebtors.reduce(function(s,c){ return s + Number(c.remaining_balance||0); }, 0); %>
+        <div class="event-section">
+          <h3><%= eventName %></h3>
+          <div class="event-total"><%= evDebtors.length %> debtor(s) — TZS <%= Number(evTotal).toLocaleString() %> outstanding</div>
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Phone</th>
+                  <th>Promised (TZS)</th>
+                  <th>Paid (TZS)</th>
+                  <th>Balance (TZS)</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% evDebtors.forEach(function(d) { %>
+                  <tr>
+                    <td><span class="contributor-id-badge"><%= d.contributor_id || '-' %></span></td>
+                    <td><strong><%= d.full_name %></strong></td>
+                    <td>
+                      <% if (d.phone_number) { %>
+                        <a href="tel:<%= d.phone_number %>" style="color:#1a237e;"><i class="fas fa-phone"></i> <%= d.phone_number %></a>
+                      <% } else { %>
+                        -
+                      <% } %>
+                    </td>
+                    <td><%= Number(d.promise_amount).toLocaleString() %></td>
+                    <td><%= Number(d.paid_amount).toLocaleString() %></td>
+                    <td><strong style="color:#c62828;"><%= Number(d.remaining_balance).toLocaleString() %></strong></td>
+                    <td><a href="/admin/events/<%= d.event_id %>/contributors/<%= d.id %>" class="btn btn-sm btn-secondary"><i class="fas fa-eye"></i></a></td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% }); %>
     <% } %>
   </div>
 

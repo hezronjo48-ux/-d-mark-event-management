@@ -29,6 +29,11 @@ function requireAuth(req, res, next) {
   res.redirect('/admin/login');
 }
 
+function nextContributorId(eventId) {
+  const count = db.prepare('SELECT COUNT(*) as cnt FROM contributors WHERE event_id = ?').get([eventId]);
+  return 'CNT-' + String((count.cnt || 0) + 1).padStart(3, '0');
+}
+
 const dbInit = require('./database');
 
 async function main() {
@@ -96,9 +101,14 @@ async function main() {
       FROM contributors c
       JOIN events e ON e.id = c.event_id
       WHERE c.status = 'Incomplete' AND c.contribution_type = 'Promise'
-      ORDER BY c.remaining_balance DESC
+      ORDER BY e.name ASC, c.remaining_balance DESC
     `).all([]);
-    res.render('debtors', { debtors, unreadCount: getUnreadCount() });
+    const grouped = {};
+    debtors.forEach(function(d) {
+      if (!grouped[d.event_name]) grouped[d.event_name] = [];
+      grouped[d.event_name].push(d);
+    });
+    res.render('debtors', { grouped: grouped, unreadCount: getUnreadCount() });
   });
 
   app.post('/admin/events/:id/status', requireAuth, (req, res) => {
@@ -354,39 +364,42 @@ async function main() {
         return res.status(404).json({ error: 'Event not found' });
       }
 
-       let contributorId;
-      if (contribution_type === 'promise') {
-        if (!promise_amount || parseFloat(promise_amount) <= 0) {
-          return res.status(400).json({ error: 'Please enter a valid promise amount' });
+        let contributorId;
+        let cidPrefix;
+        if (contribution_type === 'promise') {
+          if (!promise_amount || parseFloat(promise_amount) <= 0) {
+            return res.status(400).json({ error: 'Please enter a valid promise amount' });
+          }
+          const amount = parseFloat(promise_amount);
+          const result = db.prepare(`
+            INSERT INTO contributors (event_id, full_name, phone_number, contribution_type, promise_amount, paid_amount, remaining_balance, status)
+            VALUES (?, ?, ?, 'Promise', ?, 0, ?, 'Incomplete')
+          `).run([event_id, full_name.trim(), phone_number || null, amount, amount]);
+          contributorId = result.lastInsertRowid;
+          cidPrefix = nextContributorId(event_id);
+          db.prepare('UPDATE contributors SET contributor_id = ? WHERE id = ?').run([cidPrefix, contributorId]);
+          db.prepare('INSERT INTO payments (contributor_id, amount, payment_method, sender_name) VALUES (?, 0, ?, ?)')
+            .run([contributorId, '-', full_name.trim()]);
+        } else if (contribution_type === 'cash') {
+          if (!amount_paid || parseFloat(amount_paid) <= 0) {
+            return res.status(400).json({ error: 'Please enter a valid amount' });
+          }
+          if (!payment_method) {
+            return res.status(400).json({ error: 'Please select a payment method' });
+          }
+          const amount = parseFloat(amount_paid);
+          const result = db.prepare(`
+            INSERT INTO contributors (event_id, full_name, phone_number, contribution_type, promise_amount, paid_amount, remaining_balance, payment_method, sender_name, status)
+            VALUES (?, ?, ?, 'Cash', 0, ?, 0, ?, ?, 'Done')
+          `).run([event_id, full_name.trim(), phone_number || null, amount, payment_method, sender_name || full_name.trim()]);
+          contributorId = result.lastInsertRowid;
+          cidPrefix = nextContributorId(event_id);
+          db.prepare('UPDATE contributors SET contributor_id = ? WHERE id = ?').run([cidPrefix, contributorId]);
+          db.prepare('INSERT INTO payments (contributor_id, amount, payment_method, sender_name) VALUES (?, ?, ?, ?)')
+            .run([contributorId, amount, payment_method, sender_name || full_name.trim()]);
         }
-        const amount = parseFloat(promise_amount);
-        const result = db.prepare(`
-          INSERT INTO contributors (event_id, full_name, phone_number, contribution_type, promise_amount, paid_amount, remaining_balance, status)
-          VALUES (?, ?, ?, 'Promise', ?, 0, ?, 'Incomplete')
-        `).run([event_id, full_name.trim(), phone_number || null, amount, amount]);
-        contributorId = result.lastInsertRowid;
-        db.prepare('UPDATE contributors SET contributor_id = ? WHERE id = ?').run(['CNT-' + String(contributorId).padStart(3, '0'), contributorId]);
-        db.prepare('INSERT INTO payments (contributor_id, amount, payment_method, sender_name) VALUES (?, 0, ?, ?)')
-          .run([contributorId, '-', full_name.trim()]);
-      } else if (contribution_type === 'cash') {
-        if (!amount_paid || parseFloat(amount_paid) <= 0) {
-          return res.status(400).json({ error: 'Please enter a valid amount' });
-        }
-        if (!payment_method) {
-          return res.status(400).json({ error: 'Please select a payment method' });
-        }
-        const amount = parseFloat(amount_paid);
-        const result = db.prepare(`
-          INSERT INTO contributors (event_id, full_name, phone_number, contribution_type, promise_amount, paid_amount, remaining_balance, payment_method, sender_name, status)
-          VALUES (?, ?, ?, 'Cash', 0, ?, 0, ?, ?, 'Done')
-        `).run([event_id, full_name.trim(), phone_number || null, amount, payment_method, sender_name || full_name.trim()]);
-        contributorId = result.lastInsertRowid;
-        db.prepare('UPDATE contributors SET contributor_id = ? WHERE id = ?').run(['CNT-' + String(contributorId).padStart(3, '0'), contributorId]);
-        db.prepare('INSERT INTO payments (contributor_id, amount, payment_method, sender_name) VALUES (?, ?, ?, ?)')
-          .run([contributorId, amount, payment_method, sender_name || full_name.trim()]);
-      }
 
-      res.json({ success: true, message: 'Contribution recorded successfully!', contributor_id: 'CNT-' + String(contributorId).padStart(3, '0') });
+        res.json({ success: true, message: 'Contribution recorded successfully!', contributor_id: cidPrefix });
       addNotification(event_id, contribution_type === 'promise' ? 'new_promise' : 'new_cash',
         (contribution_type === 'promise' ? full_name.trim() + ' made a promise' : full_name.trim() + ' contributed cash') + ' for ' + event.name);
     } catch (err) {
@@ -525,6 +538,7 @@ async function main() {
         return res.status(404).json({ error: 'Event not found' });
       }
       let contributorId;
+      let cidPrefix;
       if (contribution_type === 'promise') {
         if (!promise_amount || parseFloat(promise_amount) <= 0) {
           return res.status(400).json({ error: 'Please enter a valid promise amount' });
@@ -535,7 +549,8 @@ async function main() {
           VALUES (?, ?, ?, 'Promise', ?, 0, ?, 'Incomplete')
         `).run([req.params.id, full_name.trim(), phone_number || null, amount, amount]);
         contributorId = result.lastInsertRowid;
-        db.prepare('UPDATE contributors SET contributor_id = ? WHERE id = ?').run(['CNT-' + String(contributorId).padStart(3, '0'), contributorId]);
+        cidPrefix = nextContributorId(req.params.id);
+        db.prepare('UPDATE contributors SET contributor_id = ? WHERE id = ?').run([cidPrefix, contributorId]);
         db.prepare('INSERT INTO payments (contributor_id, amount, payment_method, sender_name) VALUES (?, 0, ?, ?)')
           .run([contributorId, '-', full_name.trim()]);
       } else {
@@ -548,7 +563,8 @@ async function main() {
           VALUES (?, ?, ?, 'Cash', 0, ?, 0, ?, ?, 'Done')
         `).run([req.params.id, full_name.trim(), phone_number || null, amount, payment_method || null, sender_name || full_name.trim()]);
         contributorId = result.lastInsertRowid;
-        db.prepare('UPDATE contributors SET contributor_id = ? WHERE id = ?').run(['CNT-' + String(contributorId).padStart(3, '0'), contributorId]);
+        cidPrefix = nextContributorId(req.params.id);
+        db.prepare('UPDATE contributors SET contributor_id = ? WHERE id = ?').run([cidPrefix, contributorId]);
         db.prepare('INSERT INTO payments (contributor_id, amount, payment_method, sender_name) VALUES (?, ?, ?, ?)')
           .run([contributorId, amount, payment_method || '-', sender_name || full_name.trim()]);
       }
