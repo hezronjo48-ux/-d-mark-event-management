@@ -29,15 +29,15 @@ function requireAuth(req, res, next) {
   res.redirect('/admin/login');
 }
 
-function nextContributorId(eventId) {
-  const count = db.prepare('SELECT COUNT(*) as cnt FROM contributors WHERE event_id = ?').get([eventId]);
-  return 'CNT-' + String((count.cnt || 0) + 1).padStart(3, '0');
-}
-
 const dbInit = require('./database');
 
 async function main() {
   const db = await dbInit.init();
+
+  function nextContributorId(eventId) {
+    const count = db.prepare('SELECT COUNT(*) as cnt FROM contributors WHERE event_id = ?').get([eventId]);
+    return 'CNT-' + String(count.cnt || 0).padStart(3, '0');
+  }
 
   app.get('/admin/login', (req, res) => {
     if (req.session && req.session.isAdmin) {
