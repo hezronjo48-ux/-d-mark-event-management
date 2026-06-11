@@ -50,8 +50,15 @@
         <% } %>
       </div>
 
-      <div style="margin-top:1rem;display:flex;gap:0.5rem;">
+      <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
         <button onclick="confirmDelete()" class="btn btn-sm" style="background:#c62828;color:#fff;"><i class="fas fa-trash"></i> Delete Event</button>
+        <span style="margin:0 0.5rem;color:#ddd;">|</span>
+        <span class="badge <%= event.status === 'Completed' ? 'badge-success' : event.status === 'Archived' ? 'badge' : 'badge-warning' %>" style="font-size:0.85rem;padding:0.35rem 0.8rem;"><%= event.status || 'Active' %></span>
+        <select id="statusSelect" onchange="changeStatus()" style="padding:0.35rem 0.6rem;font-size:0.8rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
+          <option value="Active" <%= (event.status||'Active')==='Active'?'selected':'' %>>Active</option>
+          <option value="Completed" <%= event.status==='Completed'?'selected':'' %>>Completed</option>
+          <option value="Archived" <%= event.status==='Archived'?'selected':'' %>>Archived</option>
+        </select>
       </div>
 
       <div class="link-section">
@@ -259,6 +266,17 @@
           })
           .catch(function() { alert('Failed to delete event'); });
       }
+    }
+
+    function changeStatus() {
+      var status = document.getElementById('statusSelect').value;
+      fetch('/admin/events/<%= event.id %>/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: status })
+      }).then(function(r) { return r.json(); })
+      .then(function(d) { if (d.success) { window.location.reload(); } else { alert('Failed'); } })
+      .catch(function() { alert('Failed'); });
     }
 
     function toggleManualType() {

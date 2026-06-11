@@ -112,6 +112,7 @@ async function init() {
   try { _db.run('ALTER TABLE events ADD COLUMN person2_name TEXT'); } catch(e) {}
   try { _db.run('ALTER TABLE events ADD COLUMN target_amount REAL DEFAULT 0'); } catch(e) {}
   try { _db.run('ALTER TABLE events ADD COLUMN manage_token TEXT'); } catch(e) {}
+  try { _db.run("ALTER TABLE events ADD COLUMN status TEXT DEFAULT 'Active'"); } catch(e) {}
 
   _db.run(`
     CREATE TABLE IF NOT EXISTS contributors (

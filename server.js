@@ -80,11 +80,20 @@ async function main() {
     res.json({ success: true });
   });
 
+  app.post('/admin/events/:id/status', requireAuth, (req, res) => {
+    const { status } = req.body;
+    if (!['Active', 'Completed', 'Archived'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+    db.prepare('UPDATE events SET status = ? WHERE id = ?').run([status, req.params.id]);
+    res.json({ success: true });
+  });
+
   app.get('/admin/dashboard', requireAuth, (req, res) => {
     try {
       const events = db.prepare('SELECT * FROM events ORDER BY created_at DESC').all([]);
 
-      const stats = db.prepare(`
+      const allStats = db.prepare(`
         SELECT
           COALESCE(SUM(CASE WHEN contribution_type = 'Promise' THEN promise_amount ELSE 0 END), 0) as total_promised,
           COALESCE(SUM(CASE WHEN contribution_type = 'Promise' THEN paid_amount ELSE 0 END), 0) as promise_payments,
@@ -93,13 +102,24 @@ async function main() {
         FROM contributors
       `).get([]);
 
-      stats.total_collected = stats.promise_payments + stats.total_cash;
-      stats.total_remaining = stats.total_promised - stats.promise_payments;
-      stats.event_count = events.length;
+      allStats.total_collected = allStats.promise_payments + allStats.total_cash;
+      allStats.total_remaining = allStats.total_promised - allStats.promise_payments;
+      allStats.event_count = events.length;
+
+      const eventStats = db.prepare(`
+        SELECT event_id,
+          COUNT(*) as c_count,
+          COALESCE(SUM(CASE WHEN contribution_type = 'Promise' THEN paid_amount ELSE 0 END), 0) + COALESCE(SUM(CASE WHEN contribution_type = 'Cash' THEN paid_amount ELSE 0 END), 0) as c_collected
+        FROM contributors GROUP BY event_id
+      `).all([]);
+
+      const statsMap = {};
+      eventStats.forEach(function(s) { statsMap[s.event_id] = s; });
 
       res.render('dashboard', {
         events,
-        stats,
+        stats: allStats,
+        statsMap: statsMap,
         unreadCount: getUnreadCount()
       });
     } catch (err) {

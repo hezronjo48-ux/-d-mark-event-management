@@ -32,12 +32,32 @@
         <div class="stat-value"><%= stats.event_count %></div>
         <div class="stat-label">Events</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-value">TZS <%= Number(stats.total_promised).toLocaleString() %></div>
+        <div class="stat-label">Total Promised</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">TZS <%= Number(stats.total_collected).toLocaleString() %></div>
+        <div class="stat-label">Total Collected</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">TZS <%= Number(stats.total_remaining).toLocaleString() %></div>
+        <div class="stat-label">Total Remaining</div>
+      </div>
     </div>
 
     <div class="section">
       <div class="section-header">
         <h2>All Events</h2>
-        <a href="/admin/events/create" class="btn btn-primary">Create Event</a>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+          <select id="statusFilter" onchange="filterByStatus()" style="padding:0.45rem 0.75rem;font-size:0.85rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
+            <option value="">All Events</option>
+            <option value="Active">Active</option>
+            <option value="Completed">Completed</option>
+            <option value="Archived">Archived</option>
+          </select>
+          <a href="/admin/events/create" class="btn btn-primary">Create Event</a>
+        </div>
       </div>
 
       <% if (events.length === 0) { %>
@@ -46,14 +66,16 @@
         </div>
       <% } else { %>
         <div class="table-responsive">
-          <table class="table">
+          <table class="table" id="eventsTable">
             <thead>
               <tr>
                 <th>Event Name</th>
                 <th>Type</th>
                 <th>People</th>
                 <th>Date</th>
-                <th>Contribution Link</th>
+                <th>Status</th>
+                <th>Contributors</th>
+                <th>Collected (TZS)</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -62,13 +84,17 @@
                 var isWedding = event.event_type === 'Wedding';
                 var isTwoPerson = event.event_type === 'Wedding' || event.event_type === 'Anniversary';
                 var personDisplay = isWedding ? (event.groom_name + ' & ' + event.bride_name) : isTwoPerson ? (event.person1_name + ' & ' + (event.person2_name || '')) : (event.person1_name || '');
+                var es = statsMap[event.id] || {};
+                var statClass = event.status === 'Completed' ? 'badge-success' : event.status === 'Archived' ? 'badge' : 'badge-warning';
               %>
-                <tr>
+                <tr data-status="<%= event.status || 'Active' %>">
                   <td><strong><%= event.name %></strong></td>
                   <td><span class="event-type-label"><%= event.event_type || 'Wedding' %></span></td>
                   <td><%= personDisplay %></td>
                   <td><%= event.event_date || '-' %></td>
-                  <td><a href="/c/<%= event.unique_link %>" target="_blank" class="link">Open Link</a></td>
+                  <td><span class="badge <%= statClass %>"><%= event.status || 'Active' %></span></td>
+                  <td><%= es.c_count || 0 %></td>
+                  <td><%= Number(es.c_collected || 0).toLocaleString() %></td>
                   <td>
                     <a href="/admin/events/<%= event.id %>" class="btn btn-sm btn-secondary">View</a>
                     <button onclick="deleteEvent(<%= event.id %>, '<%= event.name.replace(/'/g, "\\'") %>')" class="btn btn-sm" style="background:#c62828;color:#fff;margin-left:0.25rem;"><i class="fas fa-trash"></i></button>
@@ -94,6 +120,12 @@
   <div id="notifOverlay" class="notif-overlay" onclick="closeNotifications()"></div>
 
   <script>
+    function filterByStatus() {
+      var val = document.getElementById('statusFilter').value;
+      document.querySelectorAll('#eventsTable tbody tr').forEach(function(r) {
+        r.style.display = !val || r.getAttribute('data-status') === val ? '' : 'none';
+      });
+    }
     function deleteEvent(id, name) {
       if (confirm('Delete "' + name + '" and all its contributions? This cannot be undone.')) {
         fetch('/admin/events/' + id + '/delete', { method: 'POST' })
