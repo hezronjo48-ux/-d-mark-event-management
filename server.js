@@ -236,7 +236,13 @@ async function main() {
       const targetAmount = event.target_amount || 0;
       const progressPercent = targetAmount > 0 ? Math.min(100, Math.round((eventStats.total_paid / targetAmount) * 100)) : 0;
       const contributionLink = `${req.protocol}://${req.get('host')}/c/${event.unique_link}`;
-      res.render('event-manage', { event, contributors, stats: eventStats, targetAmount, progressPercent, contributionLink });
+      const debtors = db.prepare(
+        "SELECT * FROM contributors WHERE event_id = ? AND contribution_type = 'Promise' AND status = 'Incomplete' ORDER BY remaining_balance DESC"
+      ).all([event.id]);
+      const notifications = db.prepare(
+        'SELECT * FROM notifications WHERE event_id = ? ORDER BY created_at DESC LIMIT 20'
+      ).all([event.id]);
+      res.render('event-manage', { event, contributors, stats: eventStats, targetAmount, progressPercent, contributionLink, debtors, notifications });
     } catch (err) {
       res.status(500).send('An error occurred');
     }

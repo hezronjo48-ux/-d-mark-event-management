@@ -73,7 +73,9 @@
     <div class="section">
       <div class="section-header">
         <h2>Contributions</h2>
-        <a href="/admin/export/<%= event.id %>" class="btn btn-sm btn-gold" target="_blank">Export Excel</a>
+        <div style="display:flex;gap:0.5rem;">
+          <a href="/admin/export/<%= event.id %>" class="btn btn-sm btn-gold" target="_blank">Export Excel</a>
+        </div>
       </div>
 
       <div class="search-bar" style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center;">
@@ -134,6 +136,61 @@
         </div>
       <% } %>
     </div>
+
+    <% if (debtors.length > 0) { %>
+    <div class="section">
+      <div class="section-header">
+        <h2>Debtors (<%= debtors.length %>)</h2>
+      </div>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>Promised (TZS)</th>
+              <th>Paid (TZS)</th>
+              <th>Balance (TZS)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% debtors.forEach(function(d) { %>
+              <tr>
+                <td><span class="contributor-id-badge"><%= d.contributor_id || '-' %></span></td>
+                <td><%= d.full_name %></td>
+                <td><%= d.phone_number || '-' %></td>
+                <td><%= Number(d.promise_amount).toLocaleString() %></td>
+                <td><%= Number(d.paid_amount).toLocaleString() %></td>
+                <td><strong style="color:#c62828;"><%= Number(d.remaining_balance).toLocaleString() %></strong></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <% } %>
+
+    <% if (notifications.length > 0) { %>
+    <div class="section">
+      <div class="section-header">
+        <h2>Recent Notifications</h2>
+      </div>
+      <div style="max-height:300px;overflow-y:auto;">
+        <% notifications.forEach(function(n) { %>
+          <div style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0;border-bottom:1px solid #f0f0f0;">
+            <div style="width:32px;height:32px;border-radius:50%;background:#e8eaf6;display:flex;align-items:center;justify-content:center;color:#1a237e;font-size:0.85rem;flex-shrink:0;">
+              <i class="fas <%= n.type === 'new_promise' ? 'fa-handshake' : n.type === 'new_cash' ? 'fa-money-bill' : 'fa-check-circle' %>"></i>
+            </div>
+            <div style="flex:1;font-size:0.82rem;">
+              <div><%= n.message %></div>
+              <div style="font-size:0.7rem;color:#888;"><%= new Date(n.created_at).toLocaleDateString() + ' ' + new Date(n.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) %></div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+    <% } %>
   </div>
 
   <script>
