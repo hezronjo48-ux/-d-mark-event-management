@@ -10,12 +10,27 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.set('trust proxy', 1);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
+}));
+
+app.use(session({
+  secret: crypto.randomBytes(32).toString('hex'),
+  resave: true,
+  saveUninitialized: true,
+  rolling: true,
+  cookie: {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    maxAge: 8 * 60 * 60 * 1000
+  }
 }));
 
 const loginLimiter = rateLimit({
@@ -26,21 +41,8 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.post('/admin/login', loginLimiter);
 app.use(express.static(path.join(__dirname, 'public')));
-
-app.use(session({
-  secret: crypto.randomBytes(32).toString('hex'),
-  resave: false,
-  saveUninitialized: false,
-  rolling: true,
-  cookie: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 8 * 60 * 60 * 1000
-  }
-}));
+app.post('/admin/login', loginLimiter);
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
