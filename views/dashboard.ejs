@@ -126,7 +126,7 @@
                   <td><%= Number(es.c_collected || 0).toLocaleString() %></td>
                   <td>
                     <a href="/admin/events/<%= event.id %>" class="btn btn-sm btn-secondary"><%= __('view') %></a>
-                    <button onclick="deleteEvent(<%= event.id %>, '<%= event.name.replace(/'/g, "\\'") %>')" class="btn btn-sm" style="background:#c62828;color:#fff;margin-left:0.25rem;"><i class="fas fa-trash"></i></button>
+                    <button onclick="deleteEvent(<%= event.id %>, '<%= event.name.replace(/'/g, "\\'") %>')" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
                   </td>
                 </tr>
               <% }); %>

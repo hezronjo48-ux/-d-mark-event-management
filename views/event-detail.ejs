@@ -61,7 +61,7 @@
 
       <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
         <button onclick="showEditEvent()" class="btn btn-sm btn-secondary"><i class="fas fa-pen"></i> Edit</button>
-        <button onclick="confirmDelete()" class="btn btn-sm" style="background:#c62828;color:#fff;"><i class="fas fa-trash"></i> <%= __('deleteEvent') %></button>
+        <button onclick="confirmDelete()" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> <%= __('deleteEvent') %></button>
         <span style="margin:0 0.5rem;color:#ddd;">|</span>
         <span class="badge <%= event.status === 'Completed' ? 'badge-success' : event.status === 'Archived' ? 'badge' : 'badge-warning' %>" style="font-size:0.85rem;padding:0.35rem 0.8rem;"><%= event.status || __('active') %></span>
         <select id="statusSelect" onchange="changeStatus()" style="padding:0.35rem 0.6rem;font-size:0.8rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
