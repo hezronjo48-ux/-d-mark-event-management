@@ -59,17 +59,18 @@ nav {
 }
 
 .nav-brand {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Montserrat', sans-serif;
   background: linear-gradient(135deg, #d4af37 0%, #f5d76e 50%, #d4af37 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  font-size: 1.3rem;
+  font-size: 1.15rem;
   font-weight: 700;
   letter-spacing: 3px;
   text-shadow: none;
   position: relative;
   white-space: nowrap;
+  text-transform: uppercase;
 }
 
 .nav-brand::after {
@@ -569,14 +570,15 @@ nav {
 }
 
 .login-header h1 {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Montserrat', sans-serif;
   background: linear-gradient(135deg, #d4af37 0%, #f5d76e 50%, #d4af37 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  font-size: 2rem;
+  font-size: 1.6rem;
   margin-bottom: 0.15rem;
-  letter-spacing: 3px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
 }
 
 .login-subtitle {
@@ -738,13 +740,15 @@ nav {
 }
 
 .wedding-title {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 2rem;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.6rem;
   background: linear-gradient(135deg, #d4af37 0%, #f5d76e 50%, #d4af37 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }
 
 .wedding-subtitle {
