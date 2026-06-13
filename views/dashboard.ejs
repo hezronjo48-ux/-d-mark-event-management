@@ -28,6 +28,7 @@
           <span id="notifBadge" class="notif-badge" style="<%= unreadCount > 0 ? '' : 'display:none;' %>"><%= unreadCount %></span>
         </a>
         <a href="javascript:void(0)" onclick="toggleLang()" class="lang-toggle"><%= lang === 'sw' ? 'EN' : 'SW' %></a>
+        <a href="/admin/change-password"><%= __('changePassword') %></a>
         <a href="/admin/logout"><%= __('logout') %></a>
       </div>
     </div>

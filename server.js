@@ -109,6 +109,56 @@ async function main() {
     res.redirect('/admin/login');
   });
 
+  app.get('/admin/change-password', requireAuth, (req, res) => {
+    const admin = db.prepare('SELECT * FROM admin WHERE id = ?').get([req.session.adminId]);
+    res.render('change-password', { success: null, error: null, recoveryNotice: null, admin });
+  });
+
+  app.post('/admin/change-password', requireAuth, (req, res) => {
+    const { current_password, new_password, confirm_password, recovery_code } = req.body;
+    const admin = db.prepare('SELECT * FROM admin WHERE id = ?').get([req.session.adminId]);
+    if (!admin || !bcrypt.compareSync(current_password, admin.password_hash)) {
+      return res.render('change-password', { error: __('wrongPassword'), success: null, recoveryNotice: null, admin });
+    }
+    if (new_password !== confirm_password) {
+      return res.render('change-password', { error: __('passwordMismatch'), success: null, recoveryNotice: null, admin });
+    }
+    const hash = bcrypt.hashSync(new_password, 10);
+    if (recovery_code) {
+      const recoveryHash = bcrypt.hashSync(recovery_code, 10);
+      db.prepare('UPDATE admin SET password_hash = ?, recovery_code = ? WHERE id = ?').run([hash, recoveryHash, req.session.adminId]);
+    } else {
+      db.prepare('UPDATE admin SET password_hash = ? WHERE id = ?').run([hash, req.session.adminId]);
+    }
+    save();
+    logActivity('Change Password', 'Admin password changed');
+    res.render('change-password', { success: __('passwordChanged'), error: null, recoveryNotice: null, admin });
+  });
+
+  app.get('/admin/reset-password', (req, res) => {
+    res.render('reset-password', { success: null, error: null });
+  });
+
+  app.post('/admin/reset-password', (req, res) => {
+    const { username, recovery_code, new_password, confirm_password } = req.body;
+    try {
+      const admin = db.prepare('SELECT * FROM admin WHERE username = ?').get([username]);
+      if (!admin || !admin.recovery_code || !bcrypt.compareSync(recovery_code, admin.recovery_code)) {
+        return res.render('reset-password', { error: __('invalidRecovery'), success: null });
+      }
+      if (new_password !== confirm_password) {
+        return res.render('reset-password', { error: __('passwordMismatch'), success: null });
+      }
+      const hash = bcrypt.hashSync(new_password, 10);
+      db.prepare('UPDATE admin SET password_hash = ? WHERE id = ?').run([hash, admin.id]);
+      save();
+      logActivity('Reset Password', 'Admin password reset via recovery code');
+      res.render('reset-password', { success: __('passwordReset'), error: null });
+    } catch (err) {
+      res.render('reset-password', { error: __('errorOccurred'), success: null });
+    }
+  });
+
   function addNotification(eventId, type, message) {
     db.prepare('INSERT INTO notifications (event_id, type, message) VALUES (?, ?, ?)').run([eventId, type, message]);
   }

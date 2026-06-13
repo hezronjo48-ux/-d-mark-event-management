@@ -90,6 +90,7 @@ async function init() {
       password_hash TEXT NOT NULL
     )
   `);
+  try { _db.run('ALTER TABLE admin ADD COLUMN recovery_code TEXT'); } catch(e) {}
 
   _db.run(`
     CREATE TABLE IF NOT EXISTS events (
@@ -191,9 +192,17 @@ async function init() {
 
   if (!exists) {
     const hash = bcrypt.hashSync('admin123', 10);
-    _db.run('INSERT INTO admin (username, password_hash) VALUES (?, ?)', ['admin', hash]);
+    const recoveryHash = bcrypt.hashSync('reset123', 10);
+    _db.run('INSERT INTO admin (username, password_hash, recovery_code) VALUES (?, ?, ?)', ['admin', hash, recoveryHash]);
     save();
     console.log('Default admin created (username: admin, password: admin123)');
+  } else {
+    const checkRecovery = _db.exec('SELECT id FROM admin WHERE recovery_code IS NULL LIMIT 1');
+    if (checkRecovery.length > 0 && checkRecovery[0].values) {
+      const recoveryHash = bcrypt.hashSync('reset123', 10);
+      _db.run('UPDATE admin SET recovery_code = ? WHERE recovery_code IS NULL', [recoveryHash]);
+      save();
+    }
   }
 
   return api;
