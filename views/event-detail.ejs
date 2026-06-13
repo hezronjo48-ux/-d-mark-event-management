@@ -60,6 +60,7 @@
       </div>
 
       <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+        <button onclick="showEditEvent()" class="btn btn-sm btn-secondary"><i class="fas fa-pen"></i> Edit</button>
         <button onclick="confirmDelete()" class="btn btn-sm" style="background:#c62828;color:#fff;"><i class="fas fa-trash"></i> <%= __('deleteEvent') %></button>
         <span style="margin:0 0.5rem;color:#ddd;">|</span>
         <span class="badge <%= event.status === 'Completed' ? 'badge-success' : event.status === 'Archived' ? 'badge' : 'badge-warning' %>" style="font-size:0.85rem;padding:0.35rem 0.8rem;"><%= event.status || __('active') %></span>
@@ -88,6 +89,70 @@
           <button class="btn btn-sm btn-secondary" onclick="copyManageLink()"><i class="fas fa-copy"></i> <%= __('copy') %></button>
         </div>
         <p style="font-size:0.8rem;color:#888;margin-top:0.5rem;"><%= __('manageLinkHint') %></p>
+      </div>
+    </div>
+
+    <div id="editEventModal" class="modal-overlay" style="display:none;">
+      <div class="modal-content form-card" style="max-width:600px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <h3 style="margin:0;">Edit Event</h3>
+          <button onclick="closeEditEvent()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#888;">&times;</button>
+        </div>
+        <form id="editEventForm" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group" style="grid-column:1/-1;margin:0;">
+            <label>Event Name *</label>
+            <input type="text" id="edit_name" value="<%= event.name %>" required>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Event Type</label>
+            <select id="edit_event_type" onchange="toggleEditType()">
+              <option value="Wedding" <%= (event.event_type||'Wedding')==='Wedding'?'selected':'' %>><%= __('wedding') %></option>
+              <option value="Birthday" <%= event.event_type==='Birthday'?'selected':'' %>><%= __('birthday') %></option>
+              <option value="Graduation" <%= event.event_type==='Graduation'?'selected':'' %>><%= __('graduation') %></option>
+              <option value="Anniversary" <%= event.event_type==='Anniversary'?'selected':'' %>><%= __('anniversary') %></option>
+              <option value="Fundraiser" <%= event.event_type==='Fundraiser'?'selected':'' %>><%= __('fundraiser') %></option>
+              <option value="Memorial" <%= event.event_type==='Memorial'?'selected':'' %>><%= __('memorial') %></option>
+              <option value="Other" <%= ['Wedding','Birthday','Graduation','Anniversary','Fundraiser','Memorial'].indexOf(event.event_type)===-1?'selected':'' %>><%= __('other') %></option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0;" id="edit_custom_group" <%= ['Wedding','Birthday','Graduation','Anniversary','Fundraiser','Memorial'].indexOf(event.event_type)!==-1?'style="display:none;margin:0;"':'' %>>
+            <label><%= __('customEventType') %></label>
+            <input type="text" id="edit_custom_type" value="<%= ['Wedding','Birthday','Graduation','Anniversary','Fundraiser','Memorial'].indexOf(event.event_type)===-1 ? event.event_type : '' %>">
+          </div>
+          <div class="form-group" style="margin:0;" id="edit_wedding_fields" <%= event.event_type==='Wedding'?'':'style="display:none;margin:0;"' %>>
+            <label><%= __('groomName') %></label>
+            <input type="text" id="edit_groom_name" value="<%= event.groom_name||'' %>">
+          </div>
+          <div class="form-group" style="margin:0;" id="edit_wedding_fields2" <%= event.event_type==='Wedding'?'':'style="display:none;margin:0;"' %>>
+            <label><%= __('brideName') %></label>
+            <input type="text" id="edit_bride_name" value="<%= event.bride_name||'' %>">
+          </div>
+          <div class="form-group" style="margin:0;" id="edit_person1_group" <%= event.event_type!=='Wedding'?'':'style="display:none;margin:0;"' %>>
+            <label id="edit_person1_label"><%= event.event_type==='Anniversary'?__('person1'):__('personName') %></label>
+            <input type="text" id="edit_person1_name" value="<%= event.person1_name||'' %>">
+          </div>
+          <div class="form-group" style="margin:0;" id="edit_person2_group" <%= event.event_type==='Anniversary'?'':'style="display:none;margin:0;"' %>>
+            <label><%= __('person2') %></label>
+            <input type="text" id="edit_person2_name" value="<%= event.person2_name||'' %>">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label><%= __('eventDate') %></label>
+            <input type="date" id="edit_event_date" value="<%= event.event_date||'' %>">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label><%= __('venue') %></label>
+            <input type="text" id="edit_venue" value="<%= event.venue||'' %>">
+          </div>
+          <div class="form-group" style="margin:0;grid-column:1/-1;">
+            <label><%= __('targetAmount') %></label>
+            <input type="number" id="edit_target_amount" value="<%= event.target_amount||0 %>" min="0">
+          </div>
+          <div style="grid-column:1/-1;display:flex;gap:0.5rem;">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+            <button type="button" onclick="closeEditEvent()" class="btn btn-sm btn-secondary"><%= __('cancel') %></button>
+            <span id="editEventStatus"></span>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -251,6 +316,52 @@
       var newLang = '<%= lang %>' === 'sw' ? 'en' : 'sw';
       fetch('/lang/' + newLang, { method: 'POST' }).then(function(r){return r.json()}).then(function(d){if(d.success)window.location.reload()}).catch(function(){});
     }
+    function showEditEvent() {
+      document.getElementById('editEventModal').style.display = 'flex';
+    }
+    function closeEditEvent() {
+      document.getElementById('editEventModal').style.display = 'none';
+      document.getElementById('editEventStatus').textContent = '';
+    }
+    function toggleEditType() {
+      var t = document.getElementById('edit_event_type').value;
+      document.getElementById('edit_wedding_fields').style.display = t === 'Wedding' ? 'block' : 'none';
+      document.getElementById('edit_wedding_fields2').style.display = t === 'Wedding' ? 'block' : 'none';
+      document.getElementById('edit_custom_group').style.display = t === 'Other' ? 'block' : 'none';
+      var showPerson = t !== 'Wedding';
+      document.getElementById('edit_person1_group').style.display = showPerson ? 'block' : 'none';
+      var showPerson2 = t === 'Anniversary';
+      document.getElementById('edit_person2_group').style.display = showPerson2 ? 'block' : 'none';
+      document.getElementById('edit_person1_label').textContent = showPerson2 ? '<%= __('person1') %>' : '<%= __('personName') %>';
+    }
+    document.getElementById('editEventForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var data = {
+        name: document.getElementById('edit_name').value,
+        event_type: document.getElementById('edit_event_type').value,
+        custom_type: document.getElementById('edit_custom_type').value,
+        groom_name: document.getElementById('edit_groom_name').value,
+        bride_name: document.getElementById('edit_bride_name').value,
+        person1_name: document.getElementById('edit_person1_name').value,
+        person2_name: document.getElementById('edit_person2_name').value,
+        event_date: document.getElementById('edit_event_date').value,
+        venue: document.getElementById('edit_venue').value,
+        target_amount: document.getElementById('edit_target_amount').value
+      };
+      var status = document.getElementById('editEventStatus');
+      status.style.color = '#888';
+      status.textContent = '<%= __('saved') %>...';
+      fetch('/admin/events/<%= event.id %>/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.success) { window.location.reload(); }
+        else { status.style.color = '#c62828'; status.textContent = d.error || '<%= __('failed') %>'; }
+      })
+      .catch(function() { status.style.color = '#c62828'; status.textContent = '<%= __('failed') %>'; });
+    });
     function copyLink() {
       var input = document.getElementById('contributionLink');
       input.select();

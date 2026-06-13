@@ -626,6 +626,30 @@ async function main() {
     }
   });
 
+  app.post('/admin/events/:id/edit', requireAuth, (req, res) => {
+    try {
+      const { name, event_type, custom_type, groom_name, bride_name, person1_name, person2_name, event_date, venue, target_amount } = req.body;
+      const finalType = event_type === 'Other' && custom_type ? custom_type : event_type;
+      db.prepare(`UPDATE events SET name=?, event_type=?, groom_name=?, bride_name=?, person1_name=?, person2_name=?, event_date=?, venue=?, target_amount=? WHERE id=?`)
+        .run([name, finalType, groom_name||null, bride_name||null, person1_name||null, person2_name||null, event_date||null, venue||null, target_amount||0, req.params.id]);
+      res.json({ success: true });
+      logActivity('Edit Event', 'Edited event: ' + name);
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to edit event' });
+    }
+  });
+
+  app.post('/admin/events/:id/contributors/:cid/edit', requireAuth, (req, res) => {
+    try {
+      const { full_name, phone_number } = req.body;
+      db.prepare('UPDATE contributors SET full_name=?, phone_number=? WHERE id=? AND event_id=?')
+        .run([full_name, phone_number||null, req.params.cid, req.params.id]);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to update contributor' });
+    }
+  });
+
   app.post('/admin/events/:id/delete', requireAuth, (req, res) => {
     try {
       const event = db.prepare('SELECT * FROM events WHERE id = ?').get([req.params.id]);

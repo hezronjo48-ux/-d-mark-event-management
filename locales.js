@@ -196,6 +196,7 @@ module.exports = {
     enterPaymentAmount: 'Enter amount to pay now',
     senderNameHint: 'Name of person sending the money',
     of: 'of',
+    cancel: 'Cancel',
   },
   sw: {
     brand: 'D MARK EVENT MANAGEMENT',
@@ -394,5 +395,6 @@ module.exports = {
     enterPaymentAmount: 'Ingiza kiasi cha malipo sasa',
     senderNameHint: 'Jina la mtu anayetuma pesa',
     of: 'ya',
+    cancel: 'Ghairi',
   }
 };
