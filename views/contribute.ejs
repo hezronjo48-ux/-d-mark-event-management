@@ -10,6 +10,12 @@
   <style>
     .lang-toggle-public { font-size:0.75rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:4px; border:1.5px solid rgba(255,255,255,0.3); color:#fff; background:transparent; cursor:pointer; transition:0.2s; position:absolute; top:1rem; right:1rem; z-index:10; }
     .lang-toggle-public:hover { background:rgba(255,255,255,0.1); }
+    .autofill-wrap { position:relative; }
+    .autofill-dropdown { position:absolute; top:100%; left:0; right:0; background:#fff; border:1.5px solid #e0e0e0; border-top:none; border-radius:0 0 6px 6px; max-height:200px; overflow-y:auto; z-index:50; display:none; box-shadow:0 4px 12px rgba(0,0,0,0.1); }
+    .autofill-item { padding:0.6rem 0.75rem; font-size:0.85rem; cursor:pointer; border-bottom:1px solid #f5f5f5; transition:background 0.15s; }
+    .autofill-item:last-child { border-bottom:none; }
+    .autofill-item:hover { background:#e8eaf6; }
+    .autofill-item .af-phone { font-size:0.75rem; color:#888; }
   </style>
 </head>
 <body>
@@ -38,7 +44,10 @@
 
           <div class="form-group">
             <label for="full_name"><%= __('fullName') %> *</label>
-            <input type="text" id="full_name" name="full_name" required placeholder="<%= __('enterName') %>">
+            <div class="autofill-wrap">
+              <input type="text" id="full_name" name="full_name" required placeholder="<%= __('enterName') %>" autocomplete="off">
+              <div id="autofillDropdown" class="autofill-dropdown"></div>
+            </div>
           </div>
 
           <div class="form-group">
@@ -207,6 +216,53 @@
       var newLang = '<%= lang %>' === 'sw' ? 'en' : 'sw';
       fetch('/lang/' + newLang, { method: 'POST' }).then(function(r){return r.json()}).then(function(d){if(d.success)window.location.reload()}).catch(function(){});
     }
+    (function() {
+      var input = document.getElementById('full_name');
+      var dropdown = document.getElementById('autofillDropdown');
+      var phoneInput = document.getElementById('phone_number');
+      var debounceTimer;
+      var selected = false;
+
+      input.addEventListener('input', function() {
+        selected = false;
+        var val = this.value.trim();
+        if (val.length < 2) { dropdown.style.display = 'none'; return; }
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function() {
+          fetch('/api/contributor/autofill', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: val })
+          })
+          .then(function(r){return r.json()})
+          .then(function(data) {
+            if (data.matches && data.matches.length > 0 && !selected) {
+              dropdown.innerHTML = '';
+              data.matches.forEach(function(m) {
+                var item = document.createElement('div');
+                item.className = 'autofill-item';
+                item.innerHTML = '<div>' + m.full_name + '</div>' + (m.phone_number ? '<div class="af-phone">' + m.phone_number + '</div>' : '');
+                item.addEventListener('click', function() {
+                  input.value = m.full_name;
+                  if (m.phone_number) phoneInput.value = m.phone_number;
+                  selected = true;
+                  dropdown.style.display = 'none';
+                });
+                dropdown.appendChild(item);
+              });
+              dropdown.style.display = 'block';
+            } else {
+              dropdown.style.display = 'none';
+            }
+          })
+          .catch(function(){ dropdown.style.display = 'none'; });
+        }, 300);
+      });
+
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.autofill-wrap')) dropdown.style.display = 'none';
+      });
+    })();
     function switchTab(tab) {
       document.querySelectorAll('.tab-btn').forEach(function(btn) { btn.classList.remove('active'); });
       document.querySelectorAll('.tab-content').forEach(function(content) { content.classList.remove('active'); });

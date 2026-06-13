@@ -475,6 +475,22 @@ async function main() {
     }
   });
 
+  app.post('/api/contributor/autofill', (req, res) => {
+    const { query } = req.body;
+    if (!query || query.trim().length < 2) {
+      return res.json({ matches: [] });
+    }
+    try {
+      const q = '%' + query.trim().toLowerCase() + '%';
+      const matches = db.prepare(
+        "SELECT DISTINCT full_name, phone_number FROM contributors WHERE LOWER(full_name) LIKE ? OR LOWER(phone_number) LIKE ? ORDER BY full_name ASC LIMIT 10"
+      ).all([q, q]);
+      res.json({ matches });
+    } catch (err) {
+      res.json({ matches: [] });
+    }
+  });
+
   app.post('/api/promise/pay', (req, res) => {
     const { contributor_id, amount, payment_method, sender_name } = req.body;
 
