@@ -45,26 +45,42 @@ nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
+}
+
+.nav-container::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent);
 }
 
 .nav-brand {
   font-family: 'Playfair Display', Georgia, serif;
-  color: #d4af37;
-  font-size: 1.25rem;
+  background: linear-gradient(135deg, #d4af37 0%, #f5d76e 50%, #d4af37 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 1.3rem;
   font-weight: 700;
-  letter-spacing: 2px;
-  text-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
+  letter-spacing: 3px;
+  text-shadow: none;
+  position: relative;
+  white-space: nowrap;
 }
 
 .nav-brand::after {
-  content: '';
+  content: '◆';
   position: absolute;
-  right: -0.75rem;
+  right: -1rem;
   top: 50%;
   transform: translateY(-50%);
-  width: 1px;
-  height: 1.25rem;
-  background: linear-gradient(180deg, transparent, rgba(212,175,55,0.5), transparent);
+  font-size: 0.4rem;
+  -webkit-text-fill-color: #d4af37;
+  color: #d4af37;
 }
 
 .nav-links {
@@ -554,10 +570,13 @@ nav {
 
 .login-header h1 {
   font-family: 'Playfair Display', Georgia, serif;
-  color: #1a237e;
+  background: linear-gradient(135deg, #d4af37 0%, #f5d76e 50%, #d4af37 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   font-size: 2rem;
   margin-bottom: 0.15rem;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
 }
 
 .login-subtitle {
@@ -699,9 +718,10 @@ nav {
   text-align: center;
   margin-top: 1.5rem;
   font-size: 0.75rem;
-  color: #bbb;
-  letter-spacing: 1.5px;
+  color: #d4af37;
+  letter-spacing: 2px;
   text-transform: uppercase;
+  opacity: 0.7;
 }
 
 /* Public contribution page */
@@ -720,7 +740,10 @@ nav {
 .wedding-title {
   font-family: 'Playfair Display', Georgia, serif;
   font-size: 2rem;
-  color: #d4af37;
+  background: linear-gradient(135deg, #d4af37 0%, #f5d76e 50%, #d4af37 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin-bottom: 0.5rem;
 }
 
