@@ -1182,11 +1182,23 @@ nav {
 
   .nav-links {
     gap: 0.25rem;
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    justify-content: flex-start;
+    padding-bottom: 0.25rem;
+    scrollbar-width: thin;
+  }
+  .nav-links::-webkit-scrollbar {
+    height: 3px;
+  }
+  .nav-links::-webkit-scrollbar-thumb {
+    background: rgba(212,175,55,0.3);
+    border-radius: 3px;
   }
 
   .nav-links a {
+    white-space: nowrap;
     font-size: 0.78rem;
     padding: 0.35rem 0.6rem;
   }
