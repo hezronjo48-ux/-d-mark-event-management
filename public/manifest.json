@@ -1,0 +1,13 @@
+{
+  "name": "D MARK Event Management",
+  "short_name": "D MARK",
+  "description": "Event contribution management system",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1a237e",
+  "icons": [
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/icons/icon.svg", "sizes": "512x512", "type": "image/svg+xml" }
+  ]
+}

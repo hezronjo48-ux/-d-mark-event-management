@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= event.name %> - <%= __('eventDashboard') %></title>
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1a237e">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
@@ -224,6 +226,11 @@
     document.getElementById('searchInput').addEventListener('input', filterTable);
     document.getElementById('filterType').addEventListener('change', filterTable);
     document.getElementById('filterStatus').addEventListener('change', filterTable);
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js').catch(function(){});
+    }
   </script>
 </body>
 </html>
