@@ -1,14 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= lang %>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>D MARK - Admin Login</title>
+  <title><%= __('brand') %> - <%= __('adminLogin') %></title>
   <link rel="stylesheet" href="/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .lang-toggle-login { font-size:0.75rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:4px; border:1.5px solid rgba(255,255,255,0.3); color:#fff; background:transparent; cursor:pointer; transition:0.2s; position:absolute; top:1rem; right:1rem; }
+    .lang-toggle-login:hover { background:rgba(255,255,255,0.1); }
+  </style>
 </head>
 <body class="login-page">
+  <button onclick="toggleLang()" class="lang-toggle-login"><%= lang === 'sw' ? 'English' : 'Kiswahili' %></button>
   <div class="login-bg-shapes">
     <div class="shape shape-1"></div>
     <div class="shape shape-2"></div>
@@ -19,8 +24,8 @@
       <div class="login-icon">
         <i class="fas fa-ring"></i>
       </div>
-      <h1>D MARK EVENT MANAGEMENT</h1>
-      <p class="login-subtitle">Contribution Management</p>
+      <h1><%= __('brand') %></h1>
+      <p class="login-subtitle"><%= __('contributionMgmt') %></p>
       <div class="login-divider">
         <span class="divider-line"></span>
         <span class="divider-diamond">&#9670;</span>
@@ -36,21 +41,31 @@
       <div class="form-group">
         <div class="input-wrapper">
           <i class="fas fa-user input-icon"></i>
-          <input type="text" id="username" name="username" required placeholder="Username" autocomplete="username">
+          <input type="text" id="username" name="username" required placeholder="<%= __('username') %>" autocomplete="username">
         </div>
       </div>
       <div class="form-group">
         <div class="input-wrapper">
           <i class="fas fa-lock input-icon"></i>
-          <input type="password" id="password" name="password" required placeholder="Password" autocomplete="current-password">
+          <input type="password" id="password" name="password" required placeholder="<%= __('password') %>" autocomplete="current-password">
         </div>
       </div>
       <button type="submit" class="btn-login">
-        <span>Login</span>
+        <span><%= __('login') %></span>
         <i class="fas fa-arrow-right"></i>
       </button>
     </form>
-    <p class="login-footer">D MARK EVENT MANAGEMENT</p>
+    <p class="login-footer"><%= __('brand') %></p>
   </div>
+
+  <script>
+    function toggleLang() {
+      var newLang = '<%= lang %>' === 'sw' ? 'en' : 'sw';
+      fetch('/lang/' + newLang, { method: 'POST' })
+        .then(function(r){return r.json()})
+        .then(function(d){if(d.success)window.location.reload()})
+        .catch(function(){});
+    }
+  </script>
 </body>
 </html>

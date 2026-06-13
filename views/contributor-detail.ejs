@@ -1,34 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= lang %>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>D MARK EVENT MANAGEMENT - <%= contributor.full_name %></title>
+  <title><%= __('brand') %> - <%= contributor.full_name %></title>
   <link rel="stylesheet" href="/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .lang-toggle { font-size:0.75rem; font-weight:600; padding:0.25rem 0.6rem; border-radius:4px; border:1.5px solid rgba(255,255,255,0.4); color:#fff; background:transparent; cursor:pointer; transition:0.2s; }
+    .lang-toggle:hover { background:rgba(255,255,255,0.15); }
+  </style>
 </head>
 <body>
   <nav>
     <div class="nav-container">
-      <div class="nav-brand">D MARK EVENT MANAGEMENT</div>
+      <div class="nav-brand"><%= __('brand') %></div>
       <div class="nav-links">
-        <a href="/admin/dashboard">Dashboard</a>
-        <a href="/admin/events/<%= event.id %>">Event Detail</a>
-        <a href="/admin/debtors">Debtors</a>
-        <a href="/admin/activity-log">Activity Log</a>
+        <a href="/admin/dashboard"><%= __('dashboard') %></a>
+        <a href="/admin/events/<%= event.id %>"><%= __('eventDetail') %></a>
+        <a href="/admin/debtors"><%= __('debtors') %></a>
+        <a href="/admin/activity-log"><%= __('activityLog') %></a>
         <a href="javascript:void(0)" onclick="toggleNotifications()" class="notif-bell" style="position:relative;">
           <i class="fas fa-bell"></i>
           <span id="notifBadge" class="notif-badge" style="<%= unreadCount > 0 ? '' : 'display:none;' %>"><%= unreadCount %></span>
         </a>
-        <a href="/admin/logout">Logout</a>
+        <a href="javascript:void(0)" onclick="toggleLang()" class="lang-toggle"><%= lang === 'sw' ? 'EN' : 'SW' %></a>
+        <a href="/admin/logout"><%= __('logout') %></a>
       </div>
     </div>
   </nav>
 
   <div class="container">
     <div class="page-header">
-      <a href="/admin/events/<%= event.id %>" class="back-link">&larr; Back to <%= event.name %></a>
+      <a href="/admin/events/<%= event.id %>" class="back-link">&larr; <%= __('backToEvent') %></a>
     </div>
 
     <div class="event-card">
@@ -48,41 +53,41 @@
       <div class="stats-grid" style="margin-top:1.5rem;">
         <div class="stat-card">
           <div class="stat-value">TZS <%= Number(contributor.promise_amount || 0).toLocaleString() %></div>
-          <div class="stat-label">Promised</div>
+          <div class="stat-label"><%= __('promised') %></div>
         </div>
         <div class="stat-card">
           <div class="stat-value">TZS <%= Number(contributor.paid_amount || 0).toLocaleString() %></div>
-          <div class="stat-label">Paid</div>
+          <div class="stat-label"><%= __('paid') %></div>
         </div>
         <div class="stat-card">
           <div class="stat-value">TZS <%= Number(contributor.remaining_balance || 0).toLocaleString() %></div>
-          <div class="stat-label">Remaining</div>
+          <div class="stat-label"><%= __('remaining') %></div>
         </div>
       </div>
 
       <div class="detail-info">
-        <p><span class="label">Phone:</span> <%= contributor.phone_number || '-' %></p>
-        <p><span class="label">Payment Method:</span> <%= contributor.payment_method || '-' %></p>
-        <p><span class="label">Sender Name:</span> <%= contributor.sender_name || '-' %></p>
-        <p><span class="label">Date:</span> <%= new Date(contributor.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+        <p><span class="label"><%= __('phoneColon') %></span> <%= contributor.phone_number || '-' %></p>
+        <p><span class="label"><%= __('paymentMethodColon') %></span> <%= contributor.payment_method || '-' %></p>
+        <p><span class="label"><%= __('senderColon') %></span> <%= contributor.sender_name || '-' %></p>
+        <p><span class="label"><%= __('dateColon') %></span> <%= new Date(contributor.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %></p>
       </div>
 
       <div class="notes-section" style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid #f0f0f0;">
-        <label for="notes" style="display:block;font-size:0.85rem;font-weight:500;color:#555;margin-bottom:0.35rem;">Admin Notes</label>
+        <label for="notes" style="display:block;font-size:0.85rem;font-weight:500;color:#555;margin-bottom:0.35rem;"><%= __('adminNotes') %></label>
         <textarea id="notes" rows="3" style="width:100%;padding:0.7rem 0.85rem;font-size:0.9rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;resize:vertical;"><%= contributor.notes || '' %></textarea>
-        <button onclick="saveNotes()" class="btn btn-sm btn-primary" style="margin-top:0.5rem;"><i class="fas fa-save"></i> Save Notes</button>
-        <span id="notesStatus" style="margin-left:0.5rem;font-size:0.85rem;color:#2e7d32;display:none;">Saved</span>
+        <button onclick="saveNotes()" class="btn btn-sm btn-primary" style="margin-top:0.5rem;"><i class="fas fa-save"></i> <%= __('saveNotes') %></button>
+        <span id="notesStatus" style="margin-left:0.5rem;font-size:0.85rem;color:#2e7d32;display:none;"><%= __('saved') %></span>
       </div>
     </div>
 
     <div class="section">
       <div class="section-header">
-        <h2>Payment History</h2>
+        <h2><%= __('paymentHistory') %></h2>
       </div>
 
       <% if (payments.length === 0) { %>
         <div class="empty-state">
-          <p>No payment records found.</p>
+          <p><%= __('noPayments') %></p>
         </div>
       <% } else { %>
         <div class="table-responsive">
@@ -90,10 +95,10 @@
             <thead>
               <tr>
                 <th>#</th>
-                <th>Amount (TZS)</th>
-                <th>Payment Method</th>
-                <th>Sender Name</th>
-                <th>Date</th>
+                <th><%= __('amount') %> (TZS)</th>
+                <th><%= __('paymentMethod') %></th>
+                <th><%= __('senderName') %></th>
+                <th><%= __('date') %></th>
               </tr>
             </thead>
             <tbody>
@@ -114,6 +119,10 @@
   </div>
 
   <script>
+    function toggleLang() {
+      var newLang = '<%= lang %>' === 'sw' ? 'en' : 'sw';
+      fetch('/lang/' + newLang, { method: 'POST' }).then(function(r){return r.json()}).then(function(d){if(d.success)window.location.reload()}).catch(function(){});
+    }
     function saveNotes() {
       var notes = document.getElementById('notes').value;
       fetch('/admin/events/<%= event.id %>/contributors/<%= contributor.id %>/notes', {
@@ -125,19 +134,19 @@
       .then(function(d) {
         var status = document.getElementById('notesStatus');
         status.style.display = 'inline';
-        status.textContent = 'Saved';
+        status.textContent = '<%= __('saved') %>';
         setTimeout(function() { status.style.display = 'none'; }, 2000);
       })
-      .catch(function() { alert('Failed to save notes'); });
+      .catch(function() { alert('<%= __('saveFailed') %>'); });
     }
   </script>
 
   <div id="notifPanel" class="notif-panel">
     <div class="notif-panel-header">
-      <h3>Notifications</h3>
-      <button onclick="markAllRead()" class="btn btn-sm" style="background:none;color:#1a237e;font-size:0.75rem;padding:0;"><i class="fas fa-check-double"></i> Mark all read</button>
+      <h3><%= __('notifications') %></h3>
+      <button onclick="markAllRead()" class="btn btn-sm" style="background:none;color:#1a237e;font-size:0.75rem;padding:0;"><i class="fas fa-check-double"></i> <%= __('markAllRead') %></button>
     </div>
-    <div id="notifList" class="notif-list"><p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;">Loading...</p></div>
+    <div id="notifList" class="notif-list"><p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;"><%= __('loading') %></p></div>
   </div>
   <div id="notifOverlay" class="notif-overlay" onclick="closeNotifications()"></div>
 
@@ -154,10 +163,10 @@
     }
     function loadNotifications() {
       var list = document.getElementById('notifList');
-      list.innerHTML = '<p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;">Loading...</p>';
+      list.innerHTML = '<p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;"><%= __('loading') %></p>';
       fetch('/api/notifications').then(function(r){return r.json()}).then(function(data){
         list.innerHTML = '';
-        if (data.notifications.length === 0) { list.innerHTML = '<p style="text-align:center;color:#888;padding:2rem;font-size:0.85rem;">No notifications yet.</p>'; return; }
+        if (data.notifications.length === 0) { list.innerHTML = '<p style="text-align:center;color:#888;padding:2rem;font-size:0.85rem;"><%= __('noNotifications') %></p>'; return; }
         data.notifications.forEach(function(n){
           var d=new Date(n.created_at); var ds=d.toLocaleDateString()+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
           var icon=n.type==='new_promise'?'fa-handshake':n.type==='new_cash'?'fa-money-bill':'fa-check-circle';
@@ -166,7 +175,7 @@
           list.appendChild(item);
         });
         document.getElementById('notifBadge').style.display='none';
-      }).catch(function(){ list.innerHTML='<p style="text-align:center;color:#c62828;padding:1rem;font-size:0.85rem;">Failed to load.</p>'; });
+      }).catch(function(){ list.innerHTML='<p style="text-align:center;color:#c62828;padding:1rem;font-size:0.85rem;"><%= __('failedToLoad') %></p>'; });
     }
     function markAllRead() {
       fetch('/api/notifications/read',{method:'POST'}).then(function(r){return r.json()}).then(function(d){if(d.success){document.querySelectorAll('#notifList .notif-item').forEach(function(el){el.classList.remove('unread');});}}).catch(function(){});

@@ -1,57 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= lang %>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>D MARK EVENT MANAGEMENT - Dashboard</title>
+  <title><%= __('brand') %> - <%= __('dashboard') %></title>
   <link rel="stylesheet" href="/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .lang-toggle { font-size:0.75rem; font-weight:600; padding:0.25rem 0.6rem; border-radius:4px; border:1.5px solid rgba(255,255,255,0.4); color:#fff; background:transparent; cursor:pointer; transition:0.2s; }
+    .lang-toggle:hover { background:rgba(255,255,255,0.15); }
+  </style>
 </head>
 <body>
   <nav>
     <div class="nav-container">
-      <div class="nav-brand">D MARK EVENT MANAGEMENT</div>
+      <div class="nav-brand"><%= __('brand') %></div>
       <div class="nav-links">
-        <a href="/admin/dashboard" class="active">Dashboard</a>
-        <a href="/admin/events/create">Create Event</a>
-        <a href="/admin/debtors">Debtors</a>
-        <a href="/admin/activity-log">Activity Log</a>
+        <a href="/admin/dashboard" class="active"><%= __('dashboard') %></a>
+        <a href="/admin/events/create"><%= __('createEvent') %></a>
+        <a href="/admin/debtors"><%= __('debtors') %></a>
+        <a href="/admin/activity-log"><%= __('activityLog') %></a>
         <a href="javascript:void(0)" onclick="toggleNotifications()" class="notif-bell" style="position:relative;">
           <i class="fas fa-bell"></i>
           <span id="notifBadge" class="notif-badge" style="<%= unreadCount > 0 ? '' : 'display:none;' %>"><%= unreadCount %></span>
         </a>
-        <a href="/admin/logout">Logout</a>
+        <a href="javascript:void(0)" onclick="toggleLang()" class="lang-toggle"><%= lang === 'sw' ? 'EN' : 'SW' %></a>
+        <a href="/admin/logout"><%= __('logout') %></a>
       </div>
     </div>
   </nav>
 
   <div class="container">
-    <h1>Dashboard</h1>
+    <h1><%= __('dashboard') %></h1>
 
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-value"><%= stats.event_count %></div>
-        <div class="stat-label">Events</div>
+        <div class="stat-label"><%= __('events') %></div>
       </div>
       <div class="stat-card">
         <div class="stat-value">TZS <%= Number(stats.total_promised).toLocaleString() %></div>
-        <div class="stat-label">Total Promised</div>
+        <div class="stat-label"><%= __('totalPromised') %></div>
       </div>
       <div class="stat-card">
         <div class="stat-value">TZS <%= Number(stats.total_collected).toLocaleString() %></div>
-        <div class="stat-label">Total Collected</div>
+        <div class="stat-label"><%= __('totalCollected') %></div>
       </div>
       <div class="stat-card">
         <div class="stat-value">TZS <%= Number(stats.total_remaining).toLocaleString() %></div>
-        <div class="stat-label">Total Remaining</div>
+        <div class="stat-label"><%= __('totalRemaining') %></div>
       </div>
     </div>
 
     <div class="section" style="margin-top:0;">
-      <h2 style="font-size:1.2rem;">Collection Progress</h2>
+      <h2 style="font-size:1.2rem;"><%= __('collectionProgress') %></h2>
       <% if (chartData.length === 0) { %>
-        <p style="color:#888;font-size:0.85rem;">No data yet.</p>
+        <p style="color:#888;font-size:0.85rem;"><%= __('noData') %></p>
       <% } else { %>
         <div class="chart-container">
           <% chartData.forEach(function(d) { %>
@@ -70,35 +75,35 @@
 
     <div class="section">
       <div class="section-header">
-        <h2>All Events</h2>
+        <h2><%= __('allEvents') %></h2>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
           <select id="statusFilter" onchange="filterByStatus()" style="padding:0.45rem 0.75rem;font-size:0.85rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
-            <option value="">All Events</option>
-            <option value="Active">Active</option>
-            <option value="Completed">Completed</option>
-            <option value="Archived">Archived</option>
+            <option value=""><%= __('allEventsFilter') %></option>
+            <option value="Active"><%= __('active') %></option>
+            <option value="Completed"><%= __('completed') %></option>
+            <option value="Archived"><%= __('archived') %></option>
           </select>
-          <a href="/admin/events/create" class="btn btn-primary">Create Event</a>
+          <a href="/admin/events/create" class="btn btn-primary"><%= __('createEvent') %></a>
         </div>
       </div>
 
       <% if (events.length === 0) { %>
         <div class="empty-state">
-          <p>No events yet. Create your first event to get started.</p>
+          <p><%= __('noEvents') %></p>
         </div>
       <% } else { %>
         <div class="table-responsive">
           <table class="table" id="eventsTable">
             <thead>
               <tr>
-                <th>Event Name</th>
-                <th>Type</th>
-                <th>People</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Contributors</th>
-                <th>Collected (TZS)</th>
-                <th>Actions</th>
+                <th><%= __('eventName') %></th>
+                <th><%= __('type') %></th>
+                <th><%= __('people') %></th>
+                <th><%= __('date') %></th>
+                <th><%= __('status') %></th>
+                <th><%= __('contributors') %></th>
+                <th><%= __('totalCollected') %> (TZS)</th>
+                <th><%= __('actions') %></th>
               </tr>
             </thead>
             <tbody>
@@ -111,14 +116,14 @@
               %>
                 <tr data-status="<%= event.status || 'Active' %>">
                   <td><strong><%= event.name %></strong></td>
-                  <td><span class="event-type-label"><%= event.event_type || 'Wedding' %></span></td>
+                  <td><span class="event-type-label"><%= event.event_type || __('wedding') %></span></td>
                   <td><%= personDisplay %></td>
                   <td><%= event.event_date || '-' %></td>
-                  <td><span class="badge <%= statClass %>"><%= event.status || 'Active' %></span></td>
+                  <td><span class="badge <%= statClass %>"><%= event.status || __('active') %></span></td>
                   <td><%= es.c_count || 0 %></td>
                   <td><%= Number(es.c_collected || 0).toLocaleString() %></td>
                   <td>
-                    <a href="/admin/events/<%= event.id %>" class="btn btn-sm btn-secondary">View</a>
+                    <a href="/admin/events/<%= event.id %>" class="btn btn-sm btn-secondary"><%= __('view') %></a>
                     <button onclick="deleteEvent(<%= event.id %>, '<%= event.name.replace(/'/g, "\\'") %>')" class="btn btn-sm" style="background:#c62828;color:#fff;margin-left:0.25rem;"><i class="fas fa-trash"></i></button>
                   </td>
                 </tr>
@@ -132,16 +137,23 @@
 
   <div id="notifPanel" class="notif-panel">
     <div class="notif-panel-header">
-      <h3>Notifications</h3>
-      <button onclick="markAllRead()" class="btn btn-sm" style="background:none;color:#1a237e;font-size:0.75rem;padding:0;"><i class="fas fa-check-double"></i> Mark all read</button>
+      <h3><%= __('notifications') %></h3>
+      <button onclick="markAllRead()" class="btn btn-sm" style="background:none;color:#1a237e;font-size:0.75rem;padding:0;"><i class="fas fa-check-double"></i> <%= __('markAllRead') %></button>
     </div>
     <div id="notifList" class="notif-list">
-      <p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;">Loading...</p>
+      <p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;"><%= __('loading') %></p>
     </div>
   </div>
   <div id="notifOverlay" class="notif-overlay" onclick="closeNotifications()"></div>
 
   <script>
+    function toggleLang() {
+      var newLang = '<%= lang %>' === 'sw' ? 'en' : 'sw';
+      fetch('/lang/' + newLang, { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) { if (d.success) window.location.reload(); })
+        .catch(function() {});
+    }
     function filterByStatus() {
       var val = document.getElementById('statusFilter').value;
       document.querySelectorAll('#eventsTable tbody tr').forEach(function(r) {
@@ -149,73 +161,44 @@
       });
     }
     function deleteEvent(id, name) {
-      if (confirm('Delete "' + name + '" and all its contributions? This cannot be undone.')) {
+      if (confirm('<%= __('confirmDelete').replace(/'/g, "\\'").replace(/{name}/g, "' + name + '") %>')) {
         fetch('/admin/events/' + id + '/delete', { method: 'POST' })
           .then(function(r) { return r.json(); })
           .then(function(d) {
             if (d.success) { window.location.reload(); }
-            else { alert('Failed: ' + (d.error || 'Unknown')); }
+            else { alert('<%= __('failed') %>: ' + (d.error || '<%= __('unknownError') %>')); }
           })
-          .catch(function() { alert('Failed to delete'); });
+          .catch(function() { alert('<%= __('failedDeleteEvent') %>'); });
       }
     }
-
     function toggleNotifications() {
       var panel = document.getElementById('notifPanel');
       var overlay = document.getElementById('notifOverlay');
-      if (panel.classList.contains('open')) {
-        panel.classList.remove('open');
-        overlay.style.display = 'none';
-      } else {
-        loadNotifications();
-        panel.classList.add('open');
-        overlay.style.display = 'block';
-      }
+      if (panel.classList.contains('open')) { panel.classList.remove('open'); overlay.style.display = 'none'; }
+      else { loadNotifications(); panel.classList.add('open'); overlay.style.display = 'block'; }
     }
-
     function closeNotifications() {
       document.getElementById('notifPanel').classList.remove('open');
       document.getElementById('notifOverlay').style.display = 'none';
     }
-
     function loadNotifications() {
       var list = document.getElementById('notifList');
-      list.innerHTML = '<p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;">Loading...</p>';
-      fetch('/api/notifications')
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          list.innerHTML = '';
-          if (data.notifications.length === 0) {
-            list.innerHTML = '<p style="text-align:center;color:#888;padding:2rem;font-size:0.85rem;">No notifications yet.</p>';
-            return;
-          }
-          data.notifications.forEach(function(n) {
-            var d = new Date(n.created_at);
-            var dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-            var icon = n.type === 'new_promise' ? 'fa-handshake' : n.type === 'new_cash' ? 'fa-money-bill' : 'fa-check-circle';
-            var item = document.createElement('div');
-            item.className = 'notif-item' + (n.is_read ? '' : ' unread');
-            item.innerHTML =
-              '<div class="notif-icon"><i class="fas ' + icon + '"></i></div>' +
-              '<div class="notif-body"><div class="notif-msg">' + n.message + '</div><div class="notif-time">' + dateStr + '</div></div>';
-            list.appendChild(item);
-          });
-          document.getElementById('notifBadge').style.display = 'none';
-        })
-        .catch(function() {
-          list.innerHTML = '<p style="text-align:center;color:#c62828;padding:1rem;font-size:0.85rem;">Failed to load.</p>';
+      list.innerHTML = '<p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;"><%= __('loading') %></p>';
+      fetch('/api/notifications').then(function(r){return r.json()}).then(function(data){
+        list.innerHTML = '';
+        if (data.notifications.length === 0) { list.innerHTML = '<p style="text-align:center;color:#888;padding:2rem;font-size:0.85rem;"><%= __('noNotifications') %></p>'; return; }
+        data.notifications.forEach(function(n){
+          var d=new Date(n.created_at); var ds=d.toLocaleDateString()+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+          var icon=n.type==='new_promise'?'fa-handshake':n.type==='new_cash'?'fa-money-bill':'fa-check-circle';
+          var item=document.createElement('div'); item.className='notif-item'+(n.is_read?'':' unread');
+          item.innerHTML='<div class="notif-icon"><i class="fas '+icon+'"></i></div><div class="notif-body"><div class="notif-msg">'+n.message+'</div><div class="notif-time">'+ds+'</div></div>';
+          list.appendChild(item);
         });
+        document.getElementById('notifBadge').style.display='none';
+      }).catch(function(){ list.innerHTML='<p style="text-align:center;color:#c62828;padding:1rem;font-size:0.85rem;"><%= __('failedToLoad') %></p>'; });
     }
-
     function markAllRead() {
-      fetch('/api/notifications/read', { method: 'POST' })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-          if (d.success) {
-            document.querySelectorAll('#notifList .notif-item').forEach(function(el) { el.classList.remove('unread'); });
-          }
-        })
-        .catch(function() {});
+      fetch('/api/notifications/read',{method:'POST'}).then(function(r){return r.json()}).then(function(d){if(d.success){document.querySelectorAll('#notifList .notif-item').forEach(function(el){el.classList.remove('unread');});}}).catch(function(){});
     }
   </script>
 </body>

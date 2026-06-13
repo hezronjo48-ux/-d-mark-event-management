@@ -1,112 +1,117 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= lang %>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>D MARK EVENT MANAGEMENT - <%= event.name %></title>
+  <title><%= __('brand') %> - <%= event.name %></title>
   <link rel="stylesheet" href="/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .lang-toggle { font-size:0.75rem; font-weight:600; padding:0.25rem 0.6rem; border-radius:4px; border:1.5px solid rgba(255,255,255,0.4); color:#fff; background:transparent; cursor:pointer; transition:0.2s; }
+    .lang-toggle:hover { background:rgba(255,255,255,0.15); }
+  </style>
 </head>
 <body>
   <nav>
     <div class="nav-container">
-      <div class="nav-brand">D MARK EVENT MANAGEMENT</div>
+      <div class="nav-brand"><%= __('brand') %></div>
       <div class="nav-links">
-        <a href="/admin/dashboard">Dashboard</a>
-        <a href="/admin/events/create">Create Event</a>
-        <a href="/admin/debtors">Debtors</a>
-        <a href="/admin/activity-log">Activity Log</a>
+        <a href="/admin/dashboard"><%= __('dashboard') %></a>
+        <a href="/admin/events/create"><%= __('createEvent') %></a>
+        <a href="/admin/debtors"><%= __('debtors') %></a>
+        <a href="/admin/activity-log"><%= __('activityLog') %></a>
         <a href="javascript:void(0)" onclick="toggleNotifications()" class="notif-bell" style="position:relative;">
           <i class="fas fa-bell"></i>
           <span id="notifBadge" class="notif-badge" style="<%= unreadCount > 0 ? '' : 'display:none;' %>"><%= unreadCount %></span>
         </a>
-        <a href="/admin/logout">Logout</a>
+        <a href="javascript:void(0)" onclick="toggleLang()" class="lang-toggle"><%= lang === 'sw' ? 'EN' : 'SW' %></a>
+        <a href="/admin/logout"><%= __('logout') %></a>
       </div>
     </div>
   </nav>
 
   <div class="container">
     <div class="page-header">
-      <a href="/admin/dashboard" class="back-link">&larr; Back to Dashboard</a>
+      <a href="/admin/dashboard" class="back-link">&larr; <%= __('backToDashboard') %></a>
     </div>
 
     <div class="event-card">
       <h1><%= event.name %></h1>
       <div class="event-details">
-        <p><span class="label">Type:</span> <span class="event-type-label"><%= event.event_type || 'Wedding' %></span></p>
+        <p><span class="label"><%= __('type') %>:</span> <span class="event-type-label"><%= event.event_type || __('wedding') %></span></p>
         <% if (event.event_type === 'Wedding') { %>
-          <p><span class="label">Groom:</span> <%= event.groom_name %></p>
-          <p><span class="label">Bride:</span> <%= event.bride_name %></p>
+          <p><span class="label"><%= __('groomColon') %></span> <%= event.groom_name %></p>
+          <p><span class="label"><%= __('brideColon') %></span> <%= event.bride_name %></p>
         <% } else if (event.event_type === 'Anniversary') { %>
-          <p><span class="label">Person 1:</span> <%= event.person1_name %></p>
-          <p><span class="label">Person 2:</span> <%= event.person2_name %></p>
+          <p><span class="label"><%= __('person1Colon') %></span> <%= event.person1_name %></p>
+          <p><span class="label"><%= __('person2Colon') %></span> <%= event.person2_name %></p>
         <% } else { %>
-          <p><span class="label">Name:</span> <%= event.person1_name %></p>
+          <p><span class="label"><%= __('nameColon2') %></span> <%= event.person1_name %></p>
         <% } %>
         <% if (event.event_date) { %>
-          <p><span class="label">Date:</span> <%= new Date(event.event_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+          <p><span class="label"><%= __('dateColon2') %></span> <%= new Date(event.event_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></p>
         <% } %>
         <% if (event.venue) { %>
-          <p><span class="label">Venue:</span> <%= event.venue %></p>
+          <p><span class="label"><%= __('venueColon') %></span> <%= event.venue %></p>
         <% } %>
       </div>
 
       <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
-        <button onclick="confirmDelete()" class="btn btn-sm" style="background:#c62828;color:#fff;"><i class="fas fa-trash"></i> Delete Event</button>
+        <button onclick="confirmDelete()" class="btn btn-sm" style="background:#c62828;color:#fff;"><i class="fas fa-trash"></i> <%= __('deleteEvent') %></button>
         <span style="margin:0 0.5rem;color:#ddd;">|</span>
-        <span class="badge <%= event.status === 'Completed' ? 'badge-success' : event.status === 'Archived' ? 'badge' : 'badge-warning' %>" style="font-size:0.85rem;padding:0.35rem 0.8rem;"><%= event.status || 'Active' %></span>
+        <span class="badge <%= event.status === 'Completed' ? 'badge-success' : event.status === 'Archived' ? 'badge' : 'badge-warning' %>" style="font-size:0.85rem;padding:0.35rem 0.8rem;"><%= event.status || __('active') %></span>
         <select id="statusSelect" onchange="changeStatus()" style="padding:0.35rem 0.6rem;font-size:0.8rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
-          <option value="Active" <%= (event.status||'Active')==='Active'?'selected':'' %>>Active</option>
-          <option value="Completed" <%= event.status==='Completed'?'selected':'' %>>Completed</option>
-          <option value="Archived" <%= event.status==='Archived'?'selected':'' %>>Archived</option>
+          <option value="Active" <%= (event.status||'Active')==='Active'?'selected':'' %>><%= __('active') %></option>
+          <option value="Completed" <%= event.status==='Completed'?'selected':'' %>><%= __('completed') %></option>
+          <option value="Archived" <%= event.status==='Archived'?'selected':'' %>><%= __('archived') %></option>
         </select>
       </div>
 
       <div class="link-section">
-        <label>Contribution Link</label>
+        <label><%= __('contributionLink') %></label>
         <div class="link-copy">
           <input type="text" id="contributionLink" value="<%= contributionLink %>" readonly>
-          <a href="<%= contributionLink %>" target="_blank" class="btn btn-sm btn-secondary"><i class="fas fa-external-link-alt"></i> Open</a>
-          <button class="btn btn-sm btn-secondary" onclick="copyLink()"><i class="fas fa-copy"></i> Copy</button>
+          <a href="<%= contributionLink %>" target="_blank" class="btn btn-sm btn-secondary"><i class="fas fa-external-link-alt"></i> <%= __('open') %></a>
+          <button class="btn btn-sm btn-secondary" onclick="copyLink()"><i class="fas fa-copy"></i> <%= __('copy') %></button>
         </div>
-        <p style="font-size:0.8rem;color:#888;margin-top:0.5rem;">Share this link with guests to collect contributions.</p>
+        <p style="font-size:0.8rem;color:#888;margin-top:0.5rem;"><%= __('shareLinkHint') %></p>
       </div>
 
       <div class="link-section" style="border-top-color:#e8eaf6;">
-        <label>Event Management Link <span style="font-weight:400;color:#888;font-size:0.75rem;">(for event owner — no login needed)</span></label>
+        <label><%= __('eventMgmtLink') %> <span style="font-weight:400;color:#888;font-size:0.75rem;"><%= __('noLoginNeeded') %></span></label>
         <div class="link-copy">
           <input type="text" id="manageLink" value="<%= manageLink %>" readonly>
-          <a href="<%= manageLink %>" target="_blank" class="btn btn-sm btn-secondary"><i class="fas fa-external-link-alt"></i> Open</a>
-          <button class="btn btn-sm btn-secondary" onclick="copyManageLink()"><i class="fas fa-copy"></i> Copy</button>
+          <a href="<%= manageLink %>" target="_blank" class="btn btn-sm btn-secondary"><i class="fas fa-external-link-alt"></i> <%= __('open') %></a>
+          <button class="btn btn-sm btn-secondary" onclick="copyManageLink()"><i class="fas fa-copy"></i> <%= __('copy') %></button>
         </div>
-        <p style="font-size:0.8rem;color:#888;margin-top:0.5rem;">The event owner can view stats, contributions, and export without logging in.</p>
+        <p style="font-size:0.8rem;color:#888;margin-top:0.5rem;"><%= __('manageLinkHint') %></p>
       </div>
     </div>
 
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-value">TZS <%= Number(stats.total_promised).toLocaleString() %></div>
-        <div class="stat-label">Total Promised</div>
+        <div class="stat-label"><%= __('totalPromised') %></div>
       </div>
       <div class="stat-card">
         <div class="stat-value">TZS <%= Number(stats.total_paid).toLocaleString() %></div>
-        <div class="stat-label">Total Collected</div>
+        <div class="stat-label"><%= __('totalCollected') %></div>
       </div>
       <div class="stat-card">
         <div class="stat-value">TZS <%= Number(stats.total_remaining).toLocaleString() %></div>
-        <div class="stat-label">Total Remaining</div>
+        <div class="stat-label"><%= __('totalRemaining') %></div>
       </div>
       <div class="stat-card">
         <div class="stat-value"><%= stats.contributor_count %></div>
-        <div class="stat-label">Contributors</div>
+        <div class="stat-label"><%= __('contributors') %></div>
       </div>
     </div>
 
     <% if (targetAmount > 0) { %>
     <div class="event-card" style="margin-bottom:1rem;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
-        <strong>Contribution Goal</strong>
+        <strong><%= __('contributionGoal') %></strong>
         <span style="font-size:0.9rem;color:#666;">TZS <%= Number(stats.total_paid).toLocaleString() %> / TZS <%= Number(targetAmount).toLocaleString() %></span>
       </div>
       <div class="progress-bar-container">
@@ -117,98 +122,98 @@
 
     <div class="section">
       <div class="section-header">
-        <h2>Contributions</h2>
+        <h2><%= __('contributions') %></h2>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-          <button onclick="document.getElementById('manualEntrySection').style.display = document.getElementById('manualEntrySection').style.display === 'none' ? 'block' : 'none'" class="btn btn-sm btn-secondary"><i class="fas fa-user-plus"></i> Manual Entry</button>
-          <a href="/admin/export/<%= event.id %>" class="btn btn-sm btn-gold">Export Excel</a>
+          <button onclick="document.getElementById('manualEntrySection').style.display = document.getElementById('manualEntrySection').style.display === 'none' ? 'block' : 'none'" class="btn btn-sm btn-secondary"><i class="fas fa-user-plus"></i> <%= __('manualEntry') %></button>
+          <a href="/admin/export/<%= event.id %>" class="btn btn-sm btn-gold"><%= __('exportExcel') %></a>
         </div>
       </div>
 
       <div id="manualEntrySection" class="form-card" style="display:none;margin-bottom:1rem;max-width:100%;">
-        <h3 style="margin-bottom:1rem;">Manual Contribution Entry</h3>
+        <h3 style="margin-bottom:1rem;"><%= __('manualEntry') %></h3>
         <form id="manualEntryForm" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
           <div class="form-group" style="margin:0;">
-            <label>Full Name *</label>
-            <input type="text" id="manual_name" required placeholder="Full name">
+            <label><%= __('fullName') %> *</label>
+            <input type="text" id="manual_name" required placeholder="<%= __('enterName') %>">
           </div>
           <div class="form-group" style="margin:0;">
-            <label>Phone Number</label>
-            <input type="text" id="manual_phone" placeholder="Phone number">
+            <label><%= __('phoneNumber') %></label>
+            <input type="text" id="manual_phone" placeholder="<%= __('phonePlaceholder') %>">
           </div>
           <div class="form-group" style="margin:0;">
-            <label>Type *</label>
+            <label><%= __('typeLabel') %></label>
             <select id="manual_type" onchange="toggleManualType()">
-              <option value="cash">Cash</option>
-              <option value="promise">Promise</option>
+              <option value="cash"><%= __('cash') %></option>
+              <option value="promise"><%= __('promise') %></option>
             </select>
           </div>
           <div class="form-group" style="margin:0;" id="manual_promise_group">
-            <label>Promise Amount (TZS) *</label>
-            <input type="number" id="manual_promise" min="1" step="1" placeholder="Promise amount">
+            <label><%= __('promiseAmount') %></label>
+            <input type="number" id="manual_promise" min="1" step="1" placeholder="<%= __('promisePlaceholder') %>">
           </div>
           <div class="form-group" style="margin:0;" id="manual_cash_group">
-            <label>Amount Paid (TZS) *</label>
-            <input type="number" id="manual_amount" min="1" step="1" placeholder="Amount paid">
+            <label><%= __('amountPaid') %></label>
+            <input type="number" id="manual_amount" min="1" step="1" placeholder="<%= __('amountPaidPlaceholder') %>">
           </div>
           <div class="form-group" style="margin:0;">
-            <label>Payment Method</label>
+            <label><%= __('paymentMethodLabel') %></label>
             <select id="manual_method">
-              <option value="">Select</option>
-              <option value="Vodacom M-Pesa">Vodacom M-Pesa</option>
-              <option value="Airtel Money">Airtel Money</option>
-              <option value="Mixx by Yas">Mixx by Yas</option>
-              <option value="HaloPesa">HaloPesa</option>
-              <option value="Bank">Bank</option>
-              <option value="Cash">Cash</option>
+              <option value=""><%= __('selectDefault') %></option>
+              <option value="Vodacom M-Pesa"><%= __('vodacom') %></option>
+              <option value="Airtel Money"><%= __('airtel') %></option>
+              <option value="Mixx by Yas"><%= __('mixx') %></option>
+              <option value="HaloPesa"><%= __('halopesa') %></option>
+              <option value="Bank"><%= __('bank') %></option>
+              <option value="Cash"><%= __('cash') %></option>
             </select>
           </div>
           <div class="form-group" style="margin:0;">
-            <label>Sender Name</label>
-            <input type="text" id="manual_sender" placeholder="Sender name">
+            <label><%= __('senderNameLabel') %></label>
+            <input type="text" id="manual_sender" placeholder="<%= __('senderPlaceholder') %>">
           </div>
           <div style="grid-column:1/-1;">
-            <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save</button>
+            <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> <%= __('save') %></button>
             <span id="manualStatus" class="result-message" style="display:inline;margin-left:0.5rem;"></span>
           </div>
         </form>
       </div>
 
       <div class="search-bar" style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center;">
-        <input type="text" id="searchInput" placeholder="Search by ID, name, or phone..." style="flex:1;min-width:200px;padding:0.5rem 0.75rem;font-size:0.85rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
+        <input type="text" id="searchInput" placeholder="<%= __('searchPlaceholder') %>" style="flex:1;min-width:200px;padding:0.5rem 0.75rem;font-size:0.85rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
         <select id="filterType" style="padding:0.5rem 0.75rem;font-size:0.85rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
-          <option value="">All Types</option>
-          <option value="Promise">Promise</option>
-          <option value="Cash">Cash</option>
+          <option value=""><%= __('allTypes') %></option>
+          <option value="Promise"><%= __('promise') %></option>
+          <option value="Cash"><%= __('cash') %></option>
         </select>
         <select id="filterStatus" style="padding:0.5rem 0.75rem;font-size:0.85rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
-          <option value="">All Status</option>
-          <option value="Done">Done</option>
-          <option value="Incomplete">Incomplete</option>
+          <option value=""><%= __('allStatus') %></option>
+          <option value="Done"><%= __('done') %></option>
+          <option value="Incomplete"><%= __('incomplete') %></option>
         </select>
         <span style="font-size:0.8rem;color:#888;" id="filterCount"></span>
       </div>
 
       <% if (contributors.length === 0) { %>
         <div class="empty-state">
-          <p>No contributions yet. Share the contribution link with your guests.</p>
+          <p><%= __('noContributions') %></p>
         </div>
       <% } else { %>
         <div class="table-responsive">
           <table class="table" id="contributorsTable">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Full Name</th>
-                <th>Phone</th>
-                <th>Type</th>
-                <th>Promise (TZS)</th>
-                <th>Paid (TZS)</th>
-                <th>Balance (TZS)</th>
-                <th>Payment Method</th>
-                <th>Status</th>
-                <th>Notes</th>
-                <th>Date</th>
-                <th>Action</th>
+                <th><%= __('id') %></th>
+                <th><%= __('fullName') %></th>
+                <th><%= __('phone') %></th>
+                <th><%= __('type') %></th>
+                <th><%= __('promise') %> (TZS)</th>
+                <th><%= __('paid') %> (TZS)</th>
+                <th><%= __('balance') %> (TZS)</th>
+                <th><%= __('paymentMethod') %></th>
+                <th><%= __('status') %></th>
+                <th><%= __('notes') %></th>
+                <th><%= __('date') %></th>
+                <th><%= __('action') %></th>
               </tr>
             </thead>
             <tbody>
@@ -240,36 +245,39 @@
   </div>
 
   <script>
+    function toggleLang() {
+      var newLang = '<%= lang %>' === 'sw' ? 'en' : 'sw';
+      fetch('/lang/' + newLang, { method: 'POST' }).then(function(r){return r.json()}).then(function(d){if(d.success)window.location.reload()}).catch(function(){});
+    }
     function copyLink() {
-      const input = document.getElementById('contributionLink');
+      var input = document.getElementById('contributionLink');
       input.select();
       document.execCommand('copy');
-      const btn = event.target;
-      const orig = btn.innerHTML;
-      btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-      setTimeout(() => { btn.innerHTML = orig; }, 2000);
+      var btn = event.target;
+      var orig = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-check"></i> <%= __('copied') %>';
+      setTimeout(function() { btn.innerHTML = orig; }, 2000);
     }
     function copyManageLink() {
-      const input = document.getElementById('manageLink');
+      var input = document.getElementById('manageLink');
       input.select();
       document.execCommand('copy');
-      const btn = event.target;
-      const orig = btn.innerHTML;
-      btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-      setTimeout(() => { btn.innerHTML = orig; }, 2000);
+      var btn = event.target;
+      var orig = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-check"></i> <%= __('copied') %>';
+      setTimeout(function() { btn.innerHTML = orig; }, 2000);
     }
     function confirmDelete() {
-      if (confirm('Are you sure you want to delete this event and all its contributions? This cannot be undone.')) {
+      if (confirm('<%= __('deleteEventConfirm') %>')) {
         fetch('/admin/events/<%= event.id %>/delete', { method: 'POST' })
           .then(function(r) { return r.json(); })
           .then(function(d) {
             if (d.success) { window.location.href = '/admin/dashboard'; }
-            else { alert('Failed to delete: ' + (d.error || 'Unknown error')); }
+            else { alert('<%= __('failedDelete') %>: ' + (d.error || '<%= __('unknownError') %>')); }
           })
-          .catch(function() { alert('Failed to delete event'); });
+          .catch(function() { alert('<%= __('failedDeleteEvent') %>'); });
       }
     }
-
     function changeStatus() {
       var status = document.getElementById('statusSelect').value;
       fetch('/admin/events/<%= event.id %>/status', {
@@ -277,10 +285,9 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: status })
       }).then(function(r) { return r.json(); })
-      .then(function(d) { if (d.success) { window.location.reload(); } else { alert('Failed'); } })
-      .catch(function() { alert('Failed'); });
+      .then(function(d) { if (d.success) { window.location.reload(); } else { alert('<%= __('failed') %>'); } })
+      .catch(function() { alert('<%= __('failed') %>'); });
     }
-
     function toggleManualType() {
       var type = document.getElementById('manual_type').value;
       document.getElementById('manual_promise_group').style.display = type === 'promise' ? 'block' : 'none';
@@ -309,19 +316,19 @@
         var status = document.getElementById('manualStatus');
         if (d.success) {
           status.className = 'result-message success';
-          status.textContent = 'Added!';
+          status.textContent = '<%= __('added') %>';
           status.style.display = 'inline';
           setTimeout(function() { window.location.reload(); }, 1000);
         } else {
           status.className = 'result-message error';
-          status.textContent = d.error || 'Failed';
+          status.textContent = d.error || '<%= __('failed') %>';
           status.style.display = 'inline';
         }
       })
       .catch(function() {
         var status = document.getElementById('manualStatus');
         status.className = 'result-message error';
-        status.textContent = 'Error';
+        status.textContent = '<%= __('error') %>';
         status.style.display = 'inline';
       });
     });
@@ -342,7 +349,7 @@
         row.style.display = match ? '' : 'none';
         if (match) count++;
       });
-      document.getElementById('filterCount').textContent = count + ' of ' + rows.length;
+      document.getElementById('filterCount').textContent = count + ' <%= __('of') %> ' + rows.length;
     }
 
     document.getElementById('searchInput').addEventListener('input', filterTable);
@@ -352,10 +359,10 @@
 
   <div id="notifPanel" class="notif-panel">
     <div class="notif-panel-header">
-      <h3>Notifications</h3>
-      <button onclick="markAllRead()" class="btn btn-sm" style="background:none;color:#1a237e;font-size:0.75rem;padding:0;"><i class="fas fa-check-double"></i> Mark all read</button>
+      <h3><%= __('notifications') %></h3>
+      <button onclick="markAllRead()" class="btn btn-sm" style="background:none;color:#1a237e;font-size:0.75rem;padding:0;"><i class="fas fa-check-double"></i> <%= __('markAllRead') %></button>
     </div>
-    <div id="notifList" class="notif-list"><p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;">Loading...</p></div>
+    <div id="notifList" class="notif-list"><p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;"><%= __('loading') %></p></div>
   </div>
   <div id="notifOverlay" class="notif-overlay" onclick="closeNotifications()"></div>
 
@@ -372,10 +379,10 @@
     }
     function loadNotifications() {
       var list = document.getElementById('notifList');
-      list.innerHTML = '<p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;">Loading...</p>';
+      list.innerHTML = '<p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;"><%= __('loading') %></p>';
       fetch('/api/notifications').then(function(r){return r.json()}).then(function(data){
         list.innerHTML = '';
-        if (data.notifications.length === 0) { list.innerHTML = '<p style="text-align:center;color:#888;padding:2rem;font-size:0.85rem;">No notifications yet.</p>'; return; }
+        if (data.notifications.length === 0) { list.innerHTML = '<p style="text-align:center;color:#888;padding:2rem;font-size:0.85rem;"><%= __('noNotifications') %></p>'; return; }
         data.notifications.forEach(function(n){
           var d=new Date(n.created_at); var ds=d.toLocaleDateString()+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
           var icon=n.type==='new_promise'?'fa-handshake':n.type==='new_cash'?'fa-money-bill':'fa-check-circle';
@@ -384,7 +391,7 @@
           list.appendChild(item);
         });
         document.getElementById('notifBadge').style.display='none';
-      }).catch(function(){ list.innerHTML='<p style="text-align:center;color:#c62828;padding:1rem;font-size:0.85rem;">Failed to load.</p>'; });
+      }).catch(function(){ list.innerHTML='<p style="text-align:center;color:#c62828;padding:1rem;font-size:0.85rem;"><%= __('failedToLoad') %></p>'; });
     }
     function markAllRead() {
       fetch('/api/notifications/read',{method:'POST'}).then(function(r){return r.json()}).then(function(d){if(d.success){document.querySelectorAll('#notifList .notif-item').forEach(function(el){el.classList.remove('unread');});}}).catch(function(){});

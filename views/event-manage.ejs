@@ -1,19 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= lang %>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= event.name %> - Event Dashboard</title>
+  <title><%= event.name %> - <%= __('eventDashboard') %></title>
   <link rel="stylesheet" href="/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .lang-toggle { font-size:0.75rem; font-weight:600; padding:0.25rem 0.6rem; border-radius:4px; border:1.5px solid rgba(255,255,255,0.4); color:#fff; background:transparent; cursor:pointer; transition:0.2s; }
+    .lang-toggle:hover { background:rgba(255,255,255,0.15); }
+  </style>
 </head>
 <body>
   <nav>
     <div class="nav-container">
-      <div class="nav-brand">D MARK EVENT MANAGEMENT</div>
+      <div class="nav-brand"><%= __('brand') %></div>
       <div class="nav-links">
-        <a href="<%= contributionLink %>" target="_blank"><i class="fas fa-external-link-alt"></i> Contribute</a>
+        <a href="<%= contributionLink %>" target="_blank"><i class="fas fa-external-link-alt"></i> <%= __('contribute') %></a>
+        <a href="javascript:void(0)" onclick="toggleLang()" class="lang-toggle"><%= lang === 'sw' ? 'EN' : 'SW' %></a>
       </div>
     </div>
   </nav>
@@ -22,19 +27,19 @@
     <div class="event-card" style="text-align:center;">
       <h1><%= event.name %></h1>
       <div class="event-details" style="text-align:center;">
-        <p><span class="label">Type:</span> <span class="event-type-label"><%= event.event_type || 'Wedding' %></span></p>
+        <p><span class="label"><%= __('type') %>:</span> <span class="event-type-label"><%= event.event_type || __('wedding') %></span></p>
         <% if (event.event_type === 'Wedding') { %>
-          <p><span class="label">Groom:</span> <%= event.groom_name %> &nbsp;|&nbsp; <span class="label">Bride:</span> <%= event.bride_name %></p>
+          <p><span class="label"><%= __('groomColon') %></span> <%= event.groom_name %> &nbsp;|&nbsp; <span class="label"><%= __('brideColon') %></span> <%= event.bride_name %></p>
         <% } else if (event.event_type === 'Anniversary') { %>
-          <p><span class="label">Person 1:</span> <%= event.person1_name %> &nbsp;|&nbsp; <span class="label">Person 2:</span> <%= event.person2_name %></p>
+          <p><span class="label"><%= __('person1Colon') %></span> <%= event.person1_name %> &nbsp;|&nbsp; <span class="label"><%= __('person2Colon') %></span> <%= event.person2_name %></p>
         <% } else { %>
-          <p><span class="label">Name:</span> <%= event.person1_name %></p>
+          <p><span class="label"><%= __('nameColon2') %></span> <%= event.person1_name %></p>
         <% } %>
         <% if (event.event_date) { %>
-          <p><span class="label">Date:</span> <%= new Date(event.event_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+          <p><span class="label"><%= __('dateColon2') %></span> <%= new Date(event.event_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></p>
         <% } %>
         <% if (event.venue) { %>
-          <p><span class="label">Venue:</span> <%= event.venue %></p>
+          <p><span class="label"><%= __('venueColon') %></span> <%= event.venue %></p>
         <% } %>
       </div>
     </div>
@@ -42,26 +47,26 @@
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-value">TZS <%= Number(stats.total_promised).toLocaleString() %></div>
-        <div class="stat-label">Total Promised</div>
+        <div class="stat-label"><%= __('totalPromised') %></div>
       </div>
       <div class="stat-card">
         <div class="stat-value">TZS <%= Number(stats.total_paid).toLocaleString() %></div>
-        <div class="stat-label">Total Collected</div>
+        <div class="stat-label"><%= __('totalCollected') %></div>
       </div>
       <div class="stat-card">
         <div class="stat-value">TZS <%= Number(stats.total_remaining).toLocaleString() %></div>
-        <div class="stat-label">Total Remaining</div>
+        <div class="stat-label"><%= __('totalRemaining') %></div>
       </div>
       <div class="stat-card">
         <div class="stat-value"><%= stats.contributor_count %></div>
-        <div class="stat-label">Contributors</div>
+        <div class="stat-label"><%= __('contributors') %></div>
       </div>
     </div>
 
     <% if (targetAmount > 0) { %>
     <div class="event-card" style="margin-bottom:1rem;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
-        <strong>Contribution Goal</strong>
+        <strong><%= __('contributionGoal') %></strong>
         <span style="font-size:0.9rem;color:#666;">TZS <%= Number(stats.total_paid).toLocaleString() %> / TZS <%= Number(targetAmount).toLocaleString() %></span>
       </div>
       <div class="progress-bar-container">
@@ -72,46 +77,46 @@
 
     <div class="section">
       <div class="section-header">
-        <h2>Contributions</h2>
+        <h2><%= __('contributions') %></h2>
         <div style="display:flex;gap:0.5rem;">
-          <a href="/admin/export/<%= event.id %>" class="btn btn-sm btn-gold" target="_blank">Export Excel</a>
+          <a href="/admin/export/<%= event.id %>" class="btn btn-sm btn-gold" target="_blank"><%= __('exportExcel') %></a>
         </div>
       </div>
 
       <div class="search-bar" style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center;">
-        <input type="text" id="searchInput" placeholder="Search by ID, name, or phone..." style="flex:1;min-width:200px;padding:0.5rem 0.75rem;font-size:0.85rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
+        <input type="text" id="searchInput" placeholder="<%= __('searchPlaceholder') %>" style="flex:1;min-width:200px;padding:0.5rem 0.75rem;font-size:0.85rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
         <select id="filterType" style="padding:0.5rem 0.75rem;font-size:0.85rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
-          <option value="">All Types</option>
-          <option value="Promise">Promise</option>
-          <option value="Cash">Cash</option>
+          <option value=""><%= __('allTypes') %></option>
+          <option value="Promise"><%= __('promise') %></option>
+          <option value="Cash"><%= __('cash') %></option>
         </select>
         <select id="filterStatus" style="padding:0.5rem 0.75rem;font-size:0.85rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
-          <option value="">All Status</option>
-          <option value="Done">Done</option>
-          <option value="Incomplete">Incomplete</option>
+          <option value=""><%= __('allStatus') %></option>
+          <option value="Done"><%= __('done') %></option>
+          <option value="Incomplete"><%= __('incomplete') %></option>
         </select>
         <span style="font-size:0.8rem;color:#888;" id="filterCount"></span>
       </div>
 
       <% if (contributors.length === 0) { %>
         <div class="empty-state">
-          <p>No contributions yet. Share the contribution link with your guests.</p>
+          <p><%= __('noContributions') %></p>
         </div>
       <% } else { %>
         <div class="table-responsive">
           <table class="table" id="contributorsTable">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Full Name</th>
-                <th>Phone</th>
-                <th>Type</th>
-                <th>Promise (TZS)</th>
-                <th>Paid (TZS)</th>
-                <th>Balance (TZS)</th>
-                <th>Payment Method</th>
-                <th>Status</th>
-                <th>Date</th>
+                <th><%= __('id') %></th>
+                <th><%= __('fullName') %></th>
+                <th><%= __('phone') %></th>
+                <th><%= __('type') %></th>
+                <th><%= __('promised') %> (TZS)</th>
+                <th><%= __('paid') %> (TZS)</th>
+                <th><%= __('remaining') %> (TZS)</th>
+                <th><%= __('paymentMethod') %></th>
+                <th><%= __('status') %></th>
+                <th><%= __('date') %></th>
               </tr>
             </thead>
             <tbody>
@@ -140,18 +145,18 @@
     <% if (debtors.length > 0) { %>
     <div class="section">
       <div class="section-header">
-        <h2>Debtors (<%= debtors.length %>)</h2>
+        <h2><%= __('debtors') %> (<%= debtors.length %>)</h2>
       </div>
       <div class="table-responsive">
         <table class="table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Promised (TZS)</th>
-              <th>Paid (TZS)</th>
-              <th>Balance (TZS)</th>
+              <th><%= __('id') %></th>
+              <th><%= __('fullName') %></th>
+              <th><%= __('phone') %></th>
+              <th><%= __('promised') %> (TZS)</th>
+              <th><%= __('paid') %> (TZS)</th>
+              <th><%= __('remaining') %> (TZS)</th>
             </tr>
           </thead>
           <tbody>
@@ -174,7 +179,7 @@
     <% if (notifications.length > 0) { %>
     <div class="section">
       <div class="section-header">
-        <h2>Recent Notifications</h2>
+        <h2><%= __('recentNotifications') %></h2>
       </div>
       <div style="max-height:300px;overflow-y:auto;">
         <% notifications.forEach(function(n) { %>
@@ -194,6 +199,10 @@
   </div>
 
   <script>
+    function toggleLang() {
+      var newLang = '<%= lang %>' === 'sw' ? 'en' : 'sw';
+      fetch('/lang/' + newLang, { method: 'POST' }).then(function(r){return r.json()}).then(function(d){if(d.success)window.location.reload()}).catch(function(){});
+    }
     function filterTable() {
       var query = document.getElementById('searchInput').value.toLowerCase();
       var typeFilter = document.getElementById('filterType').value;
@@ -210,9 +219,8 @@
         row.style.display = match ? '' : 'none';
         if (match) count++;
       });
-      document.getElementById('filterCount').textContent = count + ' of ' + rows.length;
+      document.getElementById('filterCount').textContent = count + ' <%= __('of') %> ' + rows.length;
     }
-
     document.getElementById('searchInput').addEventListener('input', filterTable);
     document.getElementById('filterType').addEventListener('change', filterTable);
     document.getElementById('filterStatus').addEventListener('change', filterTable);

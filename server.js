@@ -22,6 +22,25 @@ app.use(session({
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+const locales = require('./locales');
+
+app.use(function(req, res, next) {
+  var lang = req.session.lang || 'en';
+  res.locals.lang = lang;
+  res.locals.__ = function(key) {
+    var translation = locales[lang] && locales[lang][key];
+    return translation || locales.en[key] || key;
+  };
+  next();
+});
+
+app.post('/lang/:lang', function(req, res) {
+  if (['en', 'sw'].includes(req.params.lang)) {
+    req.session.lang = req.params.lang;
+  }
+  res.json({ success: true });
+});
+
 function requireAuth(req, res, next) {
   if (req.session && req.session.isAdmin) {
     return next();

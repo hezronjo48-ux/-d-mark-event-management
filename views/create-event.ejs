@@ -1,34 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= lang %>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>D MARK EVENT MANAGEMENT - Create Event</title>
+  <title><%= __('brand') %> - <%= __('createEvent') %></title>
   <link rel="stylesheet" href="/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .lang-toggle { font-size:0.75rem; font-weight:600; padding:0.25rem 0.6rem; border-radius:4px; border:1.5px solid rgba(255,255,255,0.4); color:#fff; background:transparent; cursor:pointer; transition:0.2s; }
+    .lang-toggle:hover { background:rgba(255,255,255,0.15); }
+  </style>
 </head>
 <body>
   <nav>
     <div class="nav-container">
-      <div class="nav-brand">D MARK EVENT MANAGEMENT</div>
+      <div class="nav-brand"><%= __('brand') %></div>
       <div class="nav-links">
-        <a href="/admin/dashboard">Dashboard</a>
-        <a href="/admin/events/create" class="active">Create Event</a>
-        <a href="/admin/debtors">Debtors</a>
-        <a href="/admin/activity-log">Activity Log</a>
+        <a href="/admin/dashboard"><%= __('dashboard') %></a>
+        <a href="/admin/events/create" class="active"><%= __('createEvent') %></a>
+        <a href="/admin/debtors"><%= __('debtors') %></a>
+        <a href="/admin/activity-log"><%= __('activityLog') %></a>
         <a href="javascript:void(0)" onclick="toggleNotifications()" class="notif-bell" style="position:relative;">
           <i class="fas fa-bell"></i>
           <span id="notifBadge" class="notif-badge" style="<%= unreadCount > 0 ? '' : 'display:none;' %>"><%= unreadCount %></span>
         </a>
-        <a href="/admin/logout">Logout</a>
+        <a href="javascript:void(0)" onclick="toggleLang()" class="lang-toggle"><%= lang === 'sw' ? 'EN' : 'SW' %></a>
+        <a href="/admin/logout"><%= __('logout') %></a>
       </div>
     </div>
   </nav>
 
   <div class="container">
     <div class="form-card">
-      <h1>Create Event</h1>
+      <h1><%= __('createEvent') %></h1>
 
       <% if (error) { %>
         <div class="alert alert-error"><%= error %></div>
@@ -36,37 +41,37 @@
 
       <form method="POST" action="/admin/events/create">
         <div class="form-group">
-          <label for="name">Event Name *</label>
-          <input type="text" id="name" name="name" required placeholder="e.g. Our Wedding Celebration" value="<%= form ? form.name : '' %>">
+          <label for="name"><%= __('eventNameLabel') %></label>
+          <input type="text" id="name" name="name" required placeholder="<%= __('eventNamePlaceholder') %>" value="<%= form ? form.name : '' %>">
         </div>
 
         <div class="form-group">
-          <label for="event_type">Event Type *</label>
+          <label for="event_type"><%= __('eventType') %></label>
           <select id="event_type" name="event_type" onchange="toggleEventType()">
-            <option value="Wedding" <%= form && form.event_type === 'Wedding' ? 'selected' : '' %>>Wedding</option>
-            <option value="Birthday" <%= form && form.event_type === 'Birthday' ? 'selected' : '' %>>Birthday</option>
-            <option value="Graduation" <%= form && form.event_type === 'Graduation' ? 'selected' : '' %>>Graduation</option>
-            <option value="Anniversary" <%= form && form.event_type === 'Anniversary' ? 'selected' : '' %>>Anniversary</option>
-            <option value="Fundraiser" <%= form && form.event_type === 'Fundraiser' ? 'selected' : '' %>>Fundraiser</option>
-            <option value="Memorial" <%= form && form.event_type === 'Memorial' ? 'selected' : '' %>>Memorial</option>
-            <option value="Other" <%= form && (form.event_type === 'Other' || (form.event_type && !['Wedding','Birthday','Graduation','Anniversary','Fundraiser','Memorial'].includes(form.event_type))) ? 'selected' : '' %>>Other</option>
+            <option value="Wedding" <%= form && form.event_type === 'Wedding' ? 'selected' : '' %>><%= __('wedding') %></option>
+            <option value="Birthday" <%= form && form.event_type === 'Birthday' ? 'selected' : '' %>><%= __('birthday') %></option>
+            <option value="Graduation" <%= form && form.event_type === 'Graduation' ? 'selected' : '' %>><%= __('graduation') %></option>
+            <option value="Anniversary" <%= form && form.event_type === 'Anniversary' ? 'selected' : '' %>><%= __('anniversary') %></option>
+            <option value="Fundraiser" <%= form && form.event_type === 'Fundraiser' ? 'selected' : '' %>><%= __('fundraiser') %></option>
+            <option value="Memorial" <%= form && form.event_type === 'Memorial' ? 'selected' : '' %>><%= __('memorial') %></option>
+            <option value="Other" <%= form && (form.event_type === 'Other' || (form.event_type && !['Wedding','Birthday','Graduation','Anniversary','Fundraiser','Memorial'].includes(form.event_type))) ? 'selected' : '' %>><%= __('other') %></option>
           </select>
         </div>
 
         <div class="form-group" id="customTypeField" style="display:none;">
-          <label for="custom_type">Custom Event Type *</label>
-          <input type="text" id="custom_type" name="custom_type" placeholder="e.g. Baby Shower, Reunion, etc." value="<%= form && form.custom_type ? form.custom_type : '' %>">
+          <label for="custom_type"><%= __('customEventType') %></label>
+          <input type="text" id="custom_type" name="custom_type" placeholder="<%= __('customTypePlaceholder') %>" value="<%= form && form.custom_type ? form.custom_type : '' %>">
         </div>
 
         <div id="weddingFields">
           <div class="form-row">
             <div class="form-group">
-              <label for="groom_name">Groom Name *</label>
-              <input type="text" id="groom_name" name="groom_name" placeholder="Groom's full name" value="<%= form ? form.groom_name : '' %>">
+              <label for="groom_name"><%= __('groomName') %></label>
+              <input type="text" id="groom_name" name="groom_name" placeholder="<%= __('groomPlaceholder') %>" value="<%= form ? form.groom_name : '' %>">
             </div>
             <div class="form-group">
-              <label for="bride_name">Bride Name *</label>
-              <input type="text" id="bride_name" name="bride_name" placeholder="Bride's full name" value="<%= form ? form.bride_name : '' %>">
+              <label for="bride_name"><%= __('brideName') %></label>
+              <input type="text" id="bride_name" name="bride_name" placeholder="<%= __('bridePlaceholder') %>" value="<%= form ? form.bride_name : '' %>">
             </div>
           </div>
         </div>
@@ -74,34 +79,34 @@
         <div id="personFields">
           <div class="form-row" id="personRow">
             <div class="form-group">
-              <label id="person1Label">Person 1 *</label>
-              <input type="text" id="person1_name" name="person1_name" placeholder="First person's full name" value="<%= form ? form.person1_name : '' %>">
+              <label id="person1Label"><%= __('person1') %></label>
+              <input type="text" id="person1_name" name="person1_name" placeholder="<%= __('person1Placeholder') %>" value="<%= form ? form.person1_name : '' %>">
             </div>
             <div class="form-group" id="person2Group">
-              <label>Person 2 *</label>
-              <input type="text" id="person2_name" name="person2_name" placeholder="Second person's full name" value="<%= form ? form.person2_name : '' %>">
+              <label><%= __('person2') %></label>
+              <input type="text" id="person2_name" name="person2_name" placeholder="<%= __('person2Placeholder') %>" value="<%= form ? form.person2_name : '' %>">
             </div>
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label for="event_date">Event Date</label>
+            <label for="event_date"><%= __('eventDate') %></label>
             <input type="date" id="event_date" name="event_date" value="<%= form ? form.event_date : '' %>">
           </div>
           <div class="form-group">
-            <label for="venue">Venue</label>
-            <input type="text" id="venue" name="venue" placeholder="Event venue address" value="<%= form ? form.venue : '' %>">
+            <label for="venue"><%= __('venue') %></label>
+            <input type="text" id="venue" name="venue" placeholder="<%= __('venuePlaceholder') %>" value="<%= form ? form.venue : '' %>">
           </div>
         </div>
 
         <div class="form-group">
-          <label for="target_amount">Contribution Goal (TZS)</label>
-          <input type="number" id="target_amount" name="target_amount" min="0" step="1" placeholder="e.g. 10000000" value="<%= form ? form.target_amount : '' %>">
-          <p style="font-size:0.75rem;color:#888;margin-top:0.25rem;">Optional: Set a target contribution amount to track progress.</p>
+          <label for="target_amount"><%= __('targetAmount') %></label>
+          <input type="number" id="target_amount" name="target_amount" min="0" step="1" placeholder="<%= __('targetAmountPlaceholder') %>" value="<%= form ? form.target_amount : '' %>">
+          <p style="font-size:0.75rem;color:#888;margin-top:0.25rem;"><%= __('targetAmountHint') %></p>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-full">Create Event</button>
+        <button type="submit" class="btn btn-primary btn-full"><%= __('createEvent') %></button>
       </form>
     </div>
   </div>
@@ -142,25 +147,29 @@
         if (type === 'Anniversary') {
           person2Group.style.display = 'block';
           personRow.style.gridTemplateColumns = '1fr 1fr';
-          person1Label.textContent = 'Person 1 *';
+          person1Label.textContent = '<%= __('person1') %>';
           document.getElementById('person2_name').required = true;
         } else {
           person2Group.style.display = 'none';
           personRow.style.gridTemplateColumns = '1fr';
-          person1Label.textContent = 'Person Name *';
+          person1Label.textContent = '<%= __('personName') %>';
           document.getElementById('person2_name').required = false;
         }
         document.getElementById('person1_name').required = true;
       }
     }
+    function toggleLang() {
+      var newLang = '<%= lang %>' === 'sw' ? 'en' : 'sw';
+      fetch('/lang/' + newLang, { method: 'POST' }).then(function(r){return r.json()}).then(function(d){if(d.success)window.location.reload()}).catch(function(){});
+    }
   </script>
 
   <div id="notifPanel" class="notif-panel">
     <div class="notif-panel-header">
-      <h3>Notifications</h3>
-      <button onclick="markAllRead()" class="btn btn-sm" style="background:none;color:#1a237e;font-size:0.75rem;padding:0;"><i class="fas fa-check-double"></i> Mark all read</button>
+      <h3><%= __('notifications') %></h3>
+      <button onclick="markAllRead()" class="btn btn-sm" style="background:none;color:#1a237e;font-size:0.75rem;padding:0;"><i class="fas fa-check-double"></i> <%= __('markAllRead') %></button>
     </div>
-    <div id="notifList" class="notif-list"><p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;">Loading...</p></div>
+    <div id="notifList" class="notif-list"><p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;"><%= __('loading') %></p></div>
   </div>
   <div id="notifOverlay" class="notif-overlay" onclick="closeNotifications()"></div>
 
@@ -177,10 +186,10 @@
     }
     function loadNotifications() {
       var list = document.getElementById('notifList');
-      list.innerHTML = '<p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;">Loading...</p>';
+      list.innerHTML = '<p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;"><%= __('loading') %></p>';
       fetch('/api/notifications').then(function(r){return r.json()}).then(function(data){
         list.innerHTML = '';
-        if (data.notifications.length === 0) { list.innerHTML = '<p style="text-align:center;color:#888;padding:2rem;font-size:0.85rem;">No notifications yet.</p>'; return; }
+        if (data.notifications.length === 0) { list.innerHTML = '<p style="text-align:center;color:#888;padding:2rem;font-size:0.85rem;"><%= __('noNotifications') %></p>'; return; }
         data.notifications.forEach(function(n){
           var d=new Date(n.created_at); var ds=d.toLocaleDateString()+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
           var icon=n.type==='new_promise'?'fa-handshake':n.type==='new_cash'?'fa-money-bill':'fa-check-circle';
@@ -189,7 +198,7 @@
           list.appendChild(item);
         });
         document.getElementById('notifBadge').style.display='none';
-      }).catch(function(){ list.innerHTML='<p style="text-align:center;color:#c62828;padding:1rem;font-size:0.85rem;">Failed to load.</p>'; });
+      }).catch(function(){ list.innerHTML='<p style="text-align:center;color:#c62828;padding:1rem;font-size:0.85rem;"><%= __('failedToLoad') %></p>'; });
     }
     function markAllRead() {
       fetch('/api/notifications/read',{method:'POST'}).then(function(r){return r.json()}).then(function(d){if(d.success){document.querySelectorAll('#notifList .notif-item').forEach(function(el){el.classList.remove('unread');});}}).catch(function(){});

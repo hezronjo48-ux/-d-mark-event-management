@@ -1,46 +1,51 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= lang %>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Activity Log - D MARK EVENT MANAGEMENT</title>
+  <title><%= __('activityLog') %> - <%= __('brand') %></title>
   <link rel="stylesheet" href="/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .lang-toggle { font-size:0.75rem; font-weight:600; padding:0.25rem 0.6rem; border-radius:4px; border:1.5px solid rgba(255,255,255,0.4); color:#fff; background:transparent; cursor:pointer; transition:0.2s; }
+    .lang-toggle:hover { background:rgba(255,255,255,0.15); }
+  </style>
 </head>
 <body>
   <nav>
     <div class="nav-container">
-      <div class="nav-brand">D MARK EVENT MANAGEMENT</div>
+      <div class="nav-brand"><%= __('brand') %></div>
       <div class="nav-links">
-        <a href="/admin/dashboard">Dashboard</a>
-        <a href="/admin/events/create">Create Event</a>
-        <a href="/admin/debtors">Debtors</a>
-        <a href="/admin/activity-log" class="active">Activity Log</a>
+        <a href="/admin/dashboard"><%= __('dashboard') %></a>
+        <a href="/admin/events/create"><%= __('createEvent') %></a>
+        <a href="/admin/debtors"><%= __('debtors') %></a>
+        <a href="/admin/activity-log" class="active"><%= __('activityLog') %></a>
         <a href="javascript:void(0)" onclick="toggleNotifications()" class="notif-bell" style="position:relative;">
           <i class="fas fa-bell"></i>
           <span id="notifBadge" class="notif-badge" style="<%= unreadCount > 0 ? '' : 'display:none;' %>"><%= unreadCount %></span>
         </a>
-        <a href="/admin/logout">Logout</a>
+        <a href="javascript:void(0)" onclick="toggleLang()" class="lang-toggle"><%= lang === 'sw' ? 'EN' : 'SW' %></a>
+        <a href="/admin/logout"><%= __('logout') %></a>
       </div>
     </div>
   </nav>
 
   <div class="container">
     <div class="page-header">
-      <h1>Activity Log</h1>
+      <h1><%= __('activityLog') %></h1>
     </div>
 
     <% if (logs.length === 0) { %>
-      <div class="empty-state"><p>No activity recorded yet.</p></div>
+      <div class="empty-state"><p><%= __('noActivity') %></p></div>
     <% } else { %>
       <div class="table-responsive">
         <table class="table">
           <thead>
             <tr>
-              <th>Action</th>
-              <th>Details</th>
-              <th>Date & Time</th>
+              <th><%= __('actionCol') %></th>
+              <th><%= __('details') %></th>
+              <th><%= __('dateTime') %></th>
             </tr>
           </thead>
           <tbody>
@@ -59,14 +64,18 @@
 
   <div id="notifPanel" class="notif-panel">
     <div class="notif-panel-header">
-      <h3>Notifications</h3>
-      <button onclick="markAllRead()" class="btn btn-sm" style="background:none;color:#1a237e;font-size:0.75rem;padding:0;"><i class="fas fa-check-double"></i> Mark all read</button>
+      <h3><%= __('notifications') %></h3>
+      <button onclick="markAllRead()" class="btn btn-sm" style="background:none;color:#1a237e;font-size:0.75rem;padding:0;"><i class="fas fa-check-double"></i> <%= __('markAllRead') %></button>
     </div>
-    <div id="notifList" class="notif-list"><p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;">Loading...</p></div>
+    <div id="notifList" class="notif-list"><p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;"><%= __('loading') %></p></div>
   </div>
   <div id="notifOverlay" class="notif-overlay" onclick="closeNotifications()"></div>
 
   <script>
+    function toggleLang() {
+      var newLang = '<%= lang %>' === 'sw' ? 'en' : 'sw';
+      fetch('/lang/' + newLang, { method: 'POST' }).then(function(r){return r.json()}).then(function(d){if(d.success)window.location.reload()}).catch(function(){});
+    }
     function toggleNotifications() {
       var panel = document.getElementById('notifPanel');
       var overlay = document.getElementById('notifOverlay');
@@ -79,10 +88,10 @@
     }
     function loadNotifications() {
       var list = document.getElementById('notifList');
-      list.innerHTML = '<p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;">Loading...</p>';
+      list.innerHTML = '<p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;"><%= __('loading') %></p>';
       fetch('/api/notifications').then(function(r){return r.json()}).then(function(data){
         list.innerHTML = '';
-        if (data.notifications.length === 0) { list.innerHTML = '<p style="text-align:center;color:#888;padding:2rem;font-size:0.85rem;">No notifications yet.</p>'; return; }
+        if (data.notifications.length === 0) { list.innerHTML = '<p style="text-align:center;color:#888;padding:2rem;font-size:0.85rem;"><%= __('noNotifications') %></p>'; return; }
         data.notifications.forEach(function(n){
           var d=new Date(n.created_at); var ds=d.toLocaleDateString()+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
           var icon=n.type==='new_promise'?'fa-handshake':n.type==='new_cash'?'fa-money-bill':'fa-check-circle';
@@ -91,7 +100,7 @@
           list.appendChild(item);
         });
         document.getElementById('notifBadge').style.display='none';
-      }).catch(function(){ list.innerHTML='<p style="text-align:center;color:#c62828;padding:1rem;font-size:0.85rem;">Failed to load.</p>'; });
+      }).catch(function(){ list.innerHTML='<p style="text-align:center;color:#c62828;padding:1rem;font-size:0.85rem;"><%= __('failedToLoad') %></p>'; });
     }
     function markAllRead() {
       fetch('/api/notifications/read',{method:'POST'}).then(function(r){return r.json()}).then(function(d){if(d.success){document.querySelectorAll('#notifList .notif-item').forEach(function(el){el.classList.remove('unread');});}}).catch(function(){});
