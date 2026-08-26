@@ -62,7 +62,7 @@ app.use(session({
   name: 'dmark.sid',
   cookie: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: false,
     sameSite: 'lax',
     maxAge: 8 * 60 * 60 * 1000
   }
@@ -128,7 +128,7 @@ function parseCookies(req) {
 function setCsrfCookie(res, token) {
   res.cookie('dmark.csrf', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: false,
     sameSite: 'lax',
     maxAge: 8 * 60 * 60 * 1000
   });
