@@ -1,6 +1,7 @@
-const express = require('express');
+﻿const express = require('express');
 const session = require('express-session');
 const path = require('path');
+const fs = require('fs');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const ExcelJS = require('exceljs');
@@ -12,22 +13,56 @@ const PORT = process.env.PORT || 3000;
 
 app.set('trust proxy', 1);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
 app.use(helmet({
-  contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", 'https://cdnjs.cloudflare.com'],
+      scriptSrcAttr: ["'none'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdnjs.cloudflare.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com'],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"]
+    }
+  }
 }));
 
+const secretFile = path.join(__dirname, 'data', '.session-secret');
+function getSessionSecret() {
+  if (process.env.SESSION_SECRET) {
+    return process.env.SESSION_SECRET;
+  }
+  try {
+    if (fs.existsSync(secretFile)) {
+      const stored = fs.readFileSync(secretFile, 'utf8').trim();
+      if (stored) return stored;
+    }
+  } catch (e) {}
+  const generated = crypto.randomBytes(32).toString('hex');
+  try {
+    fs.mkdirSync(path.join(__dirname, 'data'), { recursive: true });
+    fs.writeFileSync(secretFile, generated, { mode: 0o600 });
+  } catch (e) {}
+  return generated;
+}
+
 app.use(session({
-  secret: crypto.randomBytes(32).toString('hex'),
-  resave: true,
-  saveUninitialized: true,
+  secret: getSessionSecret(),
+  resave: false,
+  saveUninitialized: false,
   rolling: true,
+  name: 'dmark.sid',
   cookie: {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 8 * 60 * 60 * 1000
   }
@@ -37,6 +72,22 @@ const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   message: { error: 'Too many login attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const pwResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const contributeLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  message: { error: 'Too many contribution attempts from this device. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -59,6 +110,58 @@ app.use(function(req, res, next) {
   next();
 });
 
+function parseCookies(req) {
+  var out = {};
+  var header = req.headers.cookie;
+  if (!header) return out;
+  header.split(';').forEach(function(part) {
+    var idx = part.indexOf('=');
+    if (idx > -1) {
+      var name = part.slice(0, idx).trim();
+      var val = part.slice(idx + 1).trim();
+      try { out[name] = decodeURIComponent(val); } catch (e) { out[name] = val; }
+    }
+  });
+  return out;
+}
+
+function setCsrfCookie(res, token) {
+  res.cookie('dmark.csrf', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 8 * 60 * 60 * 1000
+  });
+}
+
+app.use(function(req, res, next) {
+  var cookies = req.cookies || (req.cookies = parseCookies(req));
+  var raw = cookies['dmark.csrf'];
+  if (!raw) {
+    raw = crypto.randomBytes(24).toString('hex');
+    setCsrfCookie(res, raw);
+  }
+  var expected = String(raw).split(':')[0];
+  if (expected.length !== 48) {
+    expected = crypto.randomBytes(24).toString('hex');
+    setCsrfCookie(res, expected);
+  }
+  req.csrfToken = expected;
+  res.locals.csrfToken = expected;
+  next();
+});
+
+function csrfProtect(req, res, next) {
+  var cookies = req.cookies || parseCookies(req);
+  var token = req.body && req.body._csrf;
+  if (!token) token = req.get('x-csrf-token');
+  var expected = String(cookies['dmark.csrf'] || '').split(':')[0] || req.csrfToken;
+  if (!token || token !== expected) {
+    return res.status(403).json({ error: 'Invalid or missing CSRF token' });
+  }
+  next();
+}
+
 app.post('/lang/:lang', function(req, res) {
   if (['en', 'sw'].includes(req.params.lang)) {
     req.session.lang = req.params.lang;
@@ -72,6 +175,16 @@ function requireAuth(req, res, next) {
   }
   res.redirect('/admin/login');
 }
+
+function sanitizeInput(value, maxLength) {
+  if (typeof value !== 'string') return value;
+  var clean = value.replace(/[\u0000-\u001F\u007F]/g, ' ').trim();
+  if (maxLength) clean = clean.substring(0, maxLength);
+  return clean;
+}
+function cleanName(v) { return sanitizeInput(v, 120); }
+function cleanText(v) { return sanitizeInput(v, 2000); }
+function cleanSmall(v) { return sanitizeInput(v, 255); }
 
 const dbInit = require('./database');
 
@@ -90,15 +203,19 @@ async function main() {
     res.render('login', { error: null });
   });
 
-  app.post('/admin/login', (req, res) => {
+  app.post('/admin/login', csrfProtect, (req, res) => {
     const { username, password } = req.body;
     try {
       const admin = db.prepare('SELECT * FROM admin WHERE username = ?').get([username]);
       if (admin && bcrypt.compareSync(password, admin.password_hash)) {
-        req.session.isAdmin = true;
-        req.session.adminId = admin.id;
-        logActivity('Login', 'Admin logged in');
-        return res.redirect('/admin/dashboard');
+        req.session.regenerate(function(err) {
+          if (err) return res.status(500).render('login', { error: 'An error occurred' });
+          req.session.isAdmin = true;
+          req.session.adminId = admin.id;
+          logActivity('Login', 'Admin logged in');
+          return res.redirect('/admin/dashboard');
+        });
+        return;
       }
       res.render('login', { error: 'Invalid username or password' });
     } catch (err) {
@@ -116,14 +233,14 @@ async function main() {
     res.render('change-password', { success: null, error: null, recoveryNotice: null, admin });
   });
 
-  app.post('/admin/change-password', requireAuth, (req, res) => {
+  app.post('/admin/change-password', requireAuth, csrfProtect, (req, res) => {
     const { current_password, new_password, confirm_password, recovery_code } = req.body;
     const admin = db.prepare('SELECT * FROM admin WHERE id = ?').get([req.session.adminId]);
     if (!admin || !bcrypt.compareSync(current_password, admin.password_hash)) {
-      return res.render('change-password', { error: __('wrongPassword'), success: null, recoveryNotice: null, admin });
+      return res.render('change-password', { error: res.locals.__('wrongPassword'), success: null, recoveryNotice: null, admin });
     }
     if (new_password !== confirm_password) {
-      return res.render('change-password', { error: __('passwordMismatch'), success: null, recoveryNotice: null, admin });
+      return res.render('change-password', { error: res.locals.__('passwordMismatch'), success: null, recoveryNotice: null, admin });
     }
     const hash = bcrypt.hashSync(new_password, 10);
     if (recovery_code) {
@@ -132,32 +249,30 @@ async function main() {
     } else {
       db.prepare('UPDATE admin SET password_hash = ? WHERE id = ?').run([hash, req.session.adminId]);
     }
-    save();
     logActivity('Change Password', 'Admin password changed');
-    res.render('change-password', { success: __('passwordChanged'), error: null, recoveryNotice: null, admin });
+    res.render('change-password', { success: res.locals.__('passwordChanged'), error: null, recoveryNotice: null, admin });
   });
 
   app.get('/admin/reset-password', (req, res) => {
     res.render('reset-password', { success: null, error: null });
   });
 
-  app.post('/admin/reset-password', (req, res) => {
+  app.post('/admin/reset-password', pwResetLimiter, csrfProtect, (req, res) => {
     const { username, recovery_code, new_password, confirm_password } = req.body;
     try {
       const admin = db.prepare('SELECT * FROM admin WHERE username = ?').get([username]);
       if (!admin || !admin.recovery_code || !bcrypt.compareSync(recovery_code, admin.recovery_code)) {
-        return res.render('reset-password', { error: __('invalidRecovery'), success: null });
+        return res.render('reset-password', { error: res.locals.__('invalidRecovery'), success: null });
       }
       if (new_password !== confirm_password) {
-        return res.render('reset-password', { error: __('passwordMismatch'), success: null });
+        return res.render('reset-password', { error: res.locals.__('passwordMismatch'), success: null });
       }
       const hash = bcrypt.hashSync(new_password, 10);
       db.prepare('UPDATE admin SET password_hash = ? WHERE id = ?').run([hash, admin.id]);
-      save();
       logActivity('Reset Password', 'Admin password reset via recovery code');
-      res.render('reset-password', { success: __('passwordReset'), error: null });
+      res.render('reset-password', { success: res.locals.__('passwordReset'), error: null });
     } catch (err) {
-      res.render('reset-password', { error: __('errorOccurred'), success: null });
+      res.render('reset-password', { error: res.locals.__('errorOccurred'), success: null });
     }
   });
 
@@ -179,7 +294,7 @@ async function main() {
     res.json({ notifications, unread });
   });
 
-  app.post('/api/notifications/read', requireAuth, (req, res) => {
+  app.post('/api/notifications/read', requireAuth, csrfProtect, (req, res) => {
     db.prepare("UPDATE notifications SET is_read = 1 WHERE is_read = 0").run([]);
     res.json({ success: true });
   });
@@ -205,7 +320,7 @@ async function main() {
     res.render('debtors', { grouped: grouped, unreadCount: getUnreadCount() });
   });
 
-  app.post('/admin/events/:id/status', requireAuth, (req, res) => {
+  app.post('/admin/events/:id/status', requireAuth, csrfProtect, (req, res) => {
     const { status } = req.body;
     if (!['Active', 'Completed', 'Archived'].includes(status)) {
       return res.status(400).json({ error: 'Invalid status' });
@@ -267,32 +382,39 @@ async function main() {
     res.render('create-event', { error: null, form: null, unreadCount: getUnreadCount() });
   });
 
-  app.post('/admin/events/create', requireAuth, (req, res) => {
-    const { name, event_type, custom_type, groom_name, bride_name, person1_name, person2_name, event_date, venue, target_amount } = req.body;
+  app.post('/admin/events/create', requireAuth, csrfProtect, (req, res) => {
+    const name = cleanName(req.body.name);
+    const venue = cleanName(req.body.venue);
+    const custom_type = req.body.custom_type ? cleanName(req.body.custom_type) : '';
+    const groom_name = req.body.groom_name ? cleanName(req.body.groom_name) : '';
+    const bride_name = req.body.bride_name ? cleanName(req.body.bride_name) : '';
+    const person1_name = req.body.person1_name ? cleanName(req.body.person1_name) : '';
+    const person2_name = req.body.person2_name ? cleanName(req.body.person2_name) : '';
+    const { event_type, event_date, target_amount } = req.body;
     let type = event_type || 'Wedding';
     function formData() { return { name, event_type, custom_type, groom_name, bride_name, person1_name, person2_name, event_date, venue, target_amount }; }
 
     if (type === 'Other') {
       if (!custom_type || !custom_type.trim()) {
-        return res.render('create-event', { error: 'Please specify the custom event type', form: formData() });
+        return res.render('create-event', { error: 'Please specify the custom event type', form: formData(), unreadCount: getUnreadCount() });
       }
       type = custom_type.trim();
     }
 
     if (!name) {
-      return res.render('create-event', { error: 'Event name is required', form: formData() });
+      return res.render('create-event', { error: 'Event name is required', form: formData(), unreadCount: getUnreadCount() });
     }
 
     if (type === 'Wedding' && (!groom_name || !bride_name)) {
-      return res.render('create-event', { error: 'Groom and bride names are required for wedding events', form: formData() });
+      return res.render('create-event', { error: 'Groom and bride names are required for wedding events', form: formData(), unreadCount: getUnreadCount() });
     }
 
     if (type === 'Anniversary' && (!person1_name || !person2_name)) {
-      return res.render('create-event', { error: 'Both person names are required for anniversary events', form: formData() });
+      return res.render('create-event', { error: 'Both person names are required for anniversary events', form: formData(), unreadCount: getUnreadCount() });
     }
 
     if (type !== 'Wedding' && type !== 'Anniversary' && !person1_name) {
-      return res.render('create-event', { error: 'Person name is required', form: formData() });
+      return res.render('create-event', { error: 'Person name is required', form: formData(), unreadCount: getUnreadCount() });
     }
 
     try {
@@ -306,7 +428,7 @@ async function main() {
       res.redirect(`/admin/events/${result.lastInsertRowid}`);
       logActivity('Create Event', 'Created event: ' + name);
     } catch (err) {
-      res.render('create-event', { error: 'Failed to create event', form: formData() });
+      res.render('create-event', { error: 'Failed to create event', form: formData(), unreadCount: getUnreadCount() });
     }
   });
 
@@ -448,10 +570,12 @@ async function main() {
     }
   });
 
-  app.post('/api/contribute', (req, res) => {
-    const { event_id, full_name, phone_number, contribution_type, promise_amount, amount_paid, payment_method, sender_name } = req.body;
+  app.post('/api/contribute', contributeLimiter, csrfProtect, (req, res) => {
+    const { event_id, contribution_type, promise_amount, amount_paid, payment_method, sender_name } = req.body;
+    const full_name = cleanName(req.body.full_name);
+    const phone_number = cleanSmall(req.body.phone_number);
 
-    if (!full_name || !full_name.trim()) {
+    if (!full_name) {
       return res.status(400).json({ error: 'Full name is required' });
     }
     if (!contribution_type) {
@@ -474,12 +598,12 @@ async function main() {
           const result = db.prepare(`
             INSERT INTO contributors (event_id, full_name, phone_number, contribution_type, promise_amount, paid_amount, remaining_balance, status)
             VALUES (?, ?, ?, 'Promise', ?, 0, ?, 'Incomplete')
-          `).run([event_id, full_name.trim(), phone_number || null, amount, amount]);
+          `).run([event_id, full_name, phone_number || null, amount, amount]);
           contributorId = result.lastInsertRowid;
           cidPrefix = nextContributorId(event_id);
           db.prepare('UPDATE contributors SET contributor_id = ? WHERE id = ?').run([cidPrefix, contributorId]);
           db.prepare('INSERT INTO payments (contributor_id, amount, payment_method, sender_name) VALUES (?, 0, ?, ?)')
-            .run([contributorId, '-', full_name.trim()]);
+            .run([contributorId, '-', full_name]);
         } else if (contribution_type === 'cash') {
           if (!amount_paid || parseFloat(amount_paid) <= 0) {
             return res.status(400).json({ error: 'Please enter a valid amount' });
@@ -488,26 +612,27 @@ async function main() {
             return res.status(400).json({ error: 'Please select a payment method' });
           }
           const amount = parseFloat(amount_paid);
+          const cSender = sender_name ? cleanName(sender_name) : full_name;
           const result = db.prepare(`
             INSERT INTO contributors (event_id, full_name, phone_number, contribution_type, promise_amount, paid_amount, remaining_balance, payment_method, sender_name, status)
             VALUES (?, ?, ?, 'Cash', 0, ?, 0, ?, ?, 'Done')
-          `).run([event_id, full_name.trim(), phone_number || null, amount, payment_method, sender_name || full_name.trim()]);
+          `).run([event_id, full_name, phone_number || null, amount, payment_method, cSender]);
           contributorId = result.lastInsertRowid;
           cidPrefix = nextContributorId(event_id);
           db.prepare('UPDATE contributors SET contributor_id = ? WHERE id = ?').run([cidPrefix, contributorId]);
           db.prepare('INSERT INTO payments (contributor_id, amount, payment_method, sender_name) VALUES (?, ?, ?, ?)')
-            .run([contributorId, amount, payment_method, sender_name || full_name.trim()]);
+            .run([contributorId, amount, payment_method, cSender]);
         }
 
         res.json({ success: true, message: 'Contribution recorded successfully!', contributor_id: cidPrefix });
       addNotification(event_id, contribution_type === 'promise' ? 'new_promise' : 'new_cash',
-        (contribution_type === 'promise' ? full_name.trim() + ' made a promise' : full_name.trim() + ' contributed cash') + ' for ' + event.name);
+        (contribution_type === 'promise' ? full_name + ' made a promise' : full_name + ' contributed cash') + ' for ' + event.name);
     } catch (err) {
       res.status(500).json({ error: 'An error occurred while saving your contribution' });
     }
   });
 
-  app.post('/api/promise/list', (req, res) => {
+  app.post('/api/promise/list', csrfProtect, (req, res) => {
     const { event_id } = req.body;
     try {
       const promises = db.prepare(
@@ -519,7 +644,7 @@ async function main() {
     }
   });
 
-  app.post('/api/promise/search', (req, res) => {
+  app.post('/api/promise/search', csrfProtect, (req, res) => {
     const { event_id, full_name, contributor_id } = req.body;
     const input = (full_name || contributor_id || '').trim();
 
@@ -550,7 +675,7 @@ async function main() {
     }
   });
 
-  app.post('/api/contributor/autofill', (req, res) => {
+  app.post('/api/contributor/autofill', csrfProtect, (req, res) => {
     const { query } = req.body;
     if (!query || query.trim().length < 2) {
       return res.json({ matches: [] });
@@ -566,8 +691,9 @@ async function main() {
     }
   });
 
-  app.post('/api/promise/pay', (req, res) => {
-    const { contributor_id, amount, payment_method, sender_name } = req.body;
+  app.post('/api/promise/pay', csrfProtect, (req, res) => {
+    const { contributor_id, amount, payment_method } = req.body;
+    const sender_name = req.body.sender_name ? cleanName(req.body.sender_name) : null;
 
     if (!amount || parseFloat(amount) <= 0) {
       return res.status(400).json({ error: 'Please enter a valid payment amount' });
@@ -623,7 +749,7 @@ async function main() {
     }
   });
 
-  app.post('/admin/events/:id/contributors/search', requireAuth, (req, res) => {
+  app.post('/admin/events/:id/contributors/search', requireAuth, csrfProtect, (req, res) => {
     try {
       const { query } = req.body;
       if (!query || !query.trim()) {
@@ -640,9 +766,12 @@ async function main() {
     }
   });
 
-  app.post('/admin/events/:id/contributors/manual', requireAuth, (req, res) => {
-    const { full_name, phone_number, contribution_type, promise_amount, amount_paid, payment_method, sender_name } = req.body;
-    if (!full_name || !full_name.trim()) {
+  app.post('/admin/events/:id/contributors/manual', requireAuth, csrfProtect, (req, res) => {
+    const full_name = cleanName(req.body.full_name);
+    const phone_number = cleanSmall(req.body.phone_number);
+    const sender_name = req.body.sender_name ? cleanName(req.body.sender_name) : null;
+    const { contribution_type, promise_amount, amount_paid, payment_method } = req.body;
+    if (!full_name) {
       return res.status(400).json({ error: 'Full name is required' });
     }
     if (!contribution_type) {
@@ -663,12 +792,12 @@ async function main() {
         const result = db.prepare(`
           INSERT INTO contributors (event_id, full_name, phone_number, contribution_type, promise_amount, paid_amount, remaining_balance, status)
           VALUES (?, ?, ?, 'Promise', ?, 0, ?, 'Incomplete')
-        `).run([req.params.id, full_name.trim(), phone_number || null, amount, amount]);
+        `).run([req.params.id, full_name, phone_number || null, amount, amount]);
         contributorId = result.lastInsertRowid;
         cidPrefix = nextContributorId(req.params.id);
         db.prepare('UPDATE contributors SET contributor_id = ? WHERE id = ?').run([cidPrefix, contributorId]);
         db.prepare('INSERT INTO payments (contributor_id, amount, payment_method, sender_name) VALUES (?, 0, ?, ?)')
-          .run([contributorId, '-', full_name.trim()]);
+          .run([contributorId, '-', full_name]);
       } else {
         if (!amount_paid || parseFloat(amount_paid) <= 0) {
           return res.status(400).json({ error: 'Please enter a valid amount' });
@@ -677,23 +806,23 @@ async function main() {
         const result = db.prepare(`
           INSERT INTO contributors (event_id, full_name, phone_number, contribution_type, promise_amount, paid_amount, remaining_balance, payment_method, sender_name, status)
           VALUES (?, ?, ?, 'Cash', 0, ?, 0, ?, ?, 'Done')
-        `).run([req.params.id, full_name.trim(), phone_number || null, amount, payment_method || null, sender_name || full_name.trim()]);
+        `).run([req.params.id, full_name, phone_number || null, amount, payment_method || null, sender_name || full_name]);
         contributorId = result.lastInsertRowid;
         cidPrefix = nextContributorId(req.params.id);
         db.prepare('UPDATE contributors SET contributor_id = ? WHERE id = ?').run([cidPrefix, contributorId]);
         db.prepare('INSERT INTO payments (contributor_id, amount, payment_method, sender_name) VALUES (?, ?, ?, ?)')
-          .run([contributorId, amount, payment_method || '-', sender_name || full_name.trim()]);
+          .run([contributorId, amount, payment_method || '-', sender_name || full_name]);
       }
       res.json({ success: true, message: 'Contribution added successfully' });
-      logActivity('Manual Entry', 'Added ' + (contribution_type === 'promise' ? 'promise' : 'cash contribution') + ' for ' + full_name.trim() + ' in event #' + req.params.id);
+      logActivity('Manual Entry', 'Added ' + (contribution_type === 'promise' ? 'promise' : 'cash contribution') + ' for ' + full_name + ' in event #' + req.params.id);
     } catch (err) {
       res.status(500).json({ error: 'Failed to add contribution' });
     }
   });
 
-  app.post('/admin/events/:id/contributors/:cid/notes', requireAuth, (req, res) => {
+  app.post('/admin/events/:id/contributors/:cid/notes', requireAuth, csrfProtect, (req, res) => {
     try {
-      const { notes } = req.body;
+      const notes = cleanText(req.body.notes);
       db.prepare('UPDATE contributors SET notes = ? WHERE id = ? AND event_id = ?').run([notes || '', req.params.cid, req.params.id]);
       res.json({ success: true });
     } catch (err) {
@@ -701,12 +830,18 @@ async function main() {
     }
   });
 
-  app.post('/admin/events/:id/edit', requireAuth, (req, res) => {
+  app.post('/admin/events/:id/edit', requireAuth, csrfProtect, (req, res) => {
     try {
-      const { name, event_type, custom_type, groom_name, bride_name, person1_name, person2_name, event_date, venue, target_amount } = req.body;
-      const finalType = event_type === 'Other' && custom_type ? custom_type : event_type;
+      const { event_type, custom_type, event_date, target_amount } = req.body;
+      const name = cleanName(req.body.name);
+      const venue = cleanName(req.body.venue);
+      const groom_name = req.body.groom_name ? cleanName(req.body.groom_name) : null;
+      const bride_name = req.body.bride_name ? cleanName(req.body.bride_name) : null;
+      const person1_name = req.body.person1_name ? cleanName(req.body.person1_name) : null;
+      const person2_name = req.body.person2_name ? cleanName(req.body.person2_name) : null;
+      const finalType = event_type === 'Other' && custom_type ? cleanName(custom_type) : event_type;
       db.prepare(`UPDATE events SET name=?, event_type=?, groom_name=?, bride_name=?, person1_name=?, person2_name=?, event_date=?, venue=?, target_amount=? WHERE id=?`)
-        .run([name, finalType, groom_name||null, bride_name||null, person1_name||null, person2_name||null, event_date||null, venue||null, target_amount||0, req.params.id]);
+        .run([name, finalType, groom_name, bride_name, person1_name, person2_name, event_date||null, venue||null, target_amount||0, req.params.id]);
       res.json({ success: true });
       logActivity('Edit Event', 'Edited event: ' + name);
     } catch (err) {
@@ -714,18 +849,39 @@ async function main() {
     }
   });
 
-  app.post('/admin/events/:id/contributors/:cid/edit', requireAuth, (req, res) => {
+  app.post('/admin/events/:id/contributors/:cid/edit', requireAuth, csrfProtect, (req, res) => {
     try {
-      const { full_name, phone_number } = req.body;
-      db.prepare('UPDATE contributors SET full_name=?, phone_number=? WHERE id=? AND event_id=?')
-        .run([full_name, phone_number||null, req.params.cid, req.params.id]);
+      const contributor = db.prepare('SELECT * FROM contributors WHERE id = ? AND event_id = ?').get([req.params.cid, req.params.id]);
+      if (!contributor) {
+        return res.status(404).json({ error: 'Contributor not found' });
+      }
+
+      const full_name = cleanName(req.body.full_name);
+      const phone_number = cleanSmall(req.body.phone_number);
+      const promise_amount = req.body.promise_amount !== undefined ? parseFloat(req.body.promise_amount) : contributor.promise_amount;
+      const paid_amount = req.body.paid_amount !== undefined ? parseFloat(req.body.paid_amount) : contributor.paid_amount;
+
+      if (isNaN(promise_amount) || promise_amount < 0) {
+        return res.status(400).json({ error: 'Invalid promise amount' });
+      }
+      if (isNaN(paid_amount) || paid_amount < 0) {
+        return res.status(400).json({ error: 'Invalid paid amount' });
+      }
+
+      const newRemainingBalance = Math.max(0, promise_amount - paid_amount);
+      const newStatus = newRemainingBalance <= 0 ? 'Done' : 'Incomplete';
+
+      db.prepare('UPDATE contributors SET full_name=?, phone_number=?, promise_amount=?, paid_amount=?, remaining_balance=?, status=? WHERE id=? AND event_id=?')
+        .run([full_name, phone_number||null, promise_amount, paid_amount, newRemainingBalance, newStatus, req.params.cid, req.params.id]);
+
+      logActivity('Edit Contributor', 'Updated contributor: ' + full_name + ' in event #' + req.params.id);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: 'Failed to update contributor' });
     }
   });
 
-  app.post('/admin/events/:id/delete', requireAuth, (req, res) => {
+  app.post('/admin/events/:id/delete', requireAuth, csrfProtect, (req, res) => {
     try {
       const event = db.prepare('SELECT * FROM events WHERE id = ?').get([req.params.id]);
       if (!event) {

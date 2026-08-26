@@ -7,6 +7,11 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#1a237e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
+  <meta name="csrf-token" content="<%= csrfToken %>">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
@@ -14,7 +19,7 @@
     .lang-toggle:hover { background:rgba(255,255,255,0.15); }
   </style>
 </head>
-<body>
+<body data-event-id="<%= event.id %>">
   <nav>
     <div class="nav-container">
       <div class="nav-brand"><%= __('brand') %></div>
@@ -23,11 +28,11 @@
         <a href="/admin/events/create"><%= __('createEvent') %></a>
         <a href="/admin/debtors"><%= __('debtors') %></a>
         <a href="/admin/activity-log"><%= __('activityLog') %></a>
-        <a href="javascript:void(0)" onclick="toggleNotifications()" class="notif-bell" style="position:relative;">
+        <a href="#" data-action="toggleNotifications" class="notif-bell" style="position:relative;">
           <i class="fas fa-bell"></i>
           <span id="notifBadge" class="notif-badge" style="<%= unreadCount > 0 ? '' : 'display:none;' %>"><%= unreadCount %></span>
         </a>
-        <a href="javascript:void(0)" onclick="toggleLang()" class="lang-toggle"><%= lang === 'sw' ? 'EN' : 'SW' %></a>
+        <a href="#" data-action="toggleLang" class="lang-toggle"><%= lang === 'sw' ? 'EN' : 'SW' %></a>
         <a href="/admin/change-password"><%= __('changePassword') %></a>
         <a href="/admin/logout"><%= __('logout') %></a>
       </div>
@@ -61,11 +66,11 @@
       </div>
 
       <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
-        <button onclick="showEditEvent()" class="btn btn-sm btn-secondary"><i class="fas fa-pen"></i> Edit</button>
-        <button onclick="confirmDelete()" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> <%= __('deleteEvent') %></button>
+        <button data-action="showEditEvent" class="btn btn-sm btn-secondary"><i class="fas fa-pen"></i> Edit</button>
+        <button data-action="confirmDelete" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> <%= __('deleteEvent') %></button>
         <span style="margin:0 0.5rem;color:#ddd;">|</span>
         <span class="badge <%= event.status === 'Completed' ? 'badge-success' : event.status === 'Archived' ? 'badge' : 'badge-warning' %>" style="font-size:0.85rem;padding:0.35rem 0.8rem;"><%= event.status || __('active') %></span>
-        <select id="statusSelect" onchange="changeStatus()" style="padding:0.35rem 0.6rem;font-size:0.8rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
+        <select id="statusSelect" data-action="changeStatus" style="padding:0.35rem 0.6rem;font-size:0.8rem;border:1.5px solid #e0e0e0;border-radius:6px;font-family:'Inter',sans-serif;">
           <option value="Active" <%= (event.status||'Active')==='Active'?'selected':'' %>><%= __('active') %></option>
           <option value="Completed" <%= event.status==='Completed'?'selected':'' %>><%= __('completed') %></option>
           <option value="Archived" <%= event.status==='Archived'?'selected':'' %>><%= __('archived') %></option>
@@ -77,7 +82,7 @@
         <div class="link-copy">
           <input type="text" id="contributionLink" value="<%= contributionLink %>" readonly>
           <a href="<%= contributionLink %>" target="_blank" class="btn btn-sm btn-secondary"><i class="fas fa-external-link-alt"></i> <%= __('open') %></a>
-          <button class="btn btn-sm btn-secondary" onclick="copyLink()"><i class="fas fa-copy"></i> <%= __('copy') %></button>
+          <button class="btn btn-sm btn-secondary" data-action="copyLink"><i class="fas fa-copy"></i> <%= __('copy') %></button>
         </div>
         <p style="font-size:0.8rem;color:#888;margin-top:0.5rem;"><%= __('shareLinkHint') %></p>
       </div>
@@ -87,7 +92,7 @@
         <div class="link-copy">
           <input type="text" id="manageLink" value="<%= manageLink %>" readonly>
           <a href="<%= manageLink %>" target="_blank" class="btn btn-sm btn-secondary"><i class="fas fa-external-link-alt"></i> <%= __('open') %></a>
-          <button class="btn btn-sm btn-secondary" onclick="copyManageLink()"><i class="fas fa-copy"></i> <%= __('copy') %></button>
+          <button class="btn btn-sm btn-secondary" data-action="copyManageLink"><i class="fas fa-copy"></i> <%= __('copy') %></button>
         </div>
         <p style="font-size:0.8rem;color:#888;margin-top:0.5rem;"><%= __('manageLinkHint') %></p>
       </div>
@@ -97,16 +102,16 @@
       <div class="modal-content form-card" style="max-width:600px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
           <h3 style="margin:0;">Edit Event</h3>
-          <button onclick="closeEditEvent()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#888;">&times;</button>
+          <button data-action="closeEditEvent" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#888;">&times;</button>
         </div>
-        <form id="editEventForm" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+        <form id="editEventForm" class="form-grid">
           <div class="form-group" style="grid-column:1/-1;margin:0;">
             <label>Event Name *</label>
             <input type="text" id="edit_name" value="<%= event.name %>" required>
           </div>
           <div class="form-group" style="margin:0;">
             <label>Event Type</label>
-            <select id="edit_event_type" onchange="toggleEditType()">
+            <select id="edit_event_type" data-action="toggleEditType">
               <option value="Wedding" <%= (event.event_type||'Wedding')==='Wedding'?'selected':'' %>><%= __('wedding') %></option>
               <option value="Birthday" <%= event.event_type==='Birthday'?'selected':'' %>><%= __('birthday') %></option>
               <option value="Graduation" <%= event.event_type==='Graduation'?'selected':'' %>><%= __('graduation') %></option>
@@ -150,7 +155,7 @@
           </div>
           <div style="grid-column:1/-1;display:flex;gap:0.5rem;">
             <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
-            <button type="button" onclick="closeEditEvent()" class="btn btn-sm btn-secondary"><%= __('cancel') %></button>
+            <button type="button" data-action="closeEditEvent" class="btn btn-sm btn-secondary"><%= __('cancel') %></button>
             <span id="editEventStatus"></span>
           </div>
         </form>
@@ -192,14 +197,14 @@
       <div class="section-header">
         <h2><%= __('contributions') %></h2>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-          <button onclick="document.getElementById('manualEntrySection').style.display = document.getElementById('manualEntrySection').style.display === 'none' ? 'block' : 'none'" class="btn btn-sm btn-secondary"><i class="fas fa-user-plus"></i> <%= __('manualEntry') %></button>
+          <button data-action="toggleManualEntry" class="btn btn-sm btn-secondary"><i class="fas fa-user-plus"></i> <%= __('manualEntry') %></button>
           <a href="/admin/export/<%= event.id %>" class="btn btn-sm btn-gold"><%= __('exportExcel') %></a>
         </div>
       </div>
 
       <div id="manualEntrySection" class="form-card" style="display:none;margin-bottom:1rem;max-width:100%;">
         <h3 style="margin-bottom:1rem;"><%= __('manualEntry') %></h3>
-        <form id="manualEntryForm" style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+        <form id="manualEntryForm" class="form-grid">
           <div class="form-group" style="margin:0;">
             <label><%= __('fullName') %> *</label>
             <input type="text" id="manual_name" required placeholder="<%= __('enterName') %>">
@@ -210,7 +215,7 @@
           </div>
           <div class="form-group" style="margin:0;">
             <label><%= __('typeLabel') %></label>
-            <select id="manual_type" onchange="toggleManualType()">
+            <select id="manual_type" data-action="toggleManualType">
               <option value="cash"><%= __('cash') %></option>
               <option value="promise"><%= __('promise') %></option>
             </select>
@@ -281,28 +286,33 @@
                 <th><%= __('status') %></th>
                 <th><%= __('notes') %></th>
                 <th><%= __('date') %></th>
-                <th><%= __('action') %></th>
+                <th><%= __('actions') %></th>
               </tr>
             </thead>
             <tbody>
               <% contributors.forEach(c => { %>
                 <tr data-type="<%= c.contribution_type %>" data-status="<%= c.status %>" data-search="<%= (c.contributor_id || '') + ' ' + c.full_name + ' ' + (c.phone_number || '') %>">
-                  <td><span class="contributor-id-badge"><%= c.contributor_id || '-' %></span></td>
-                  <td><%= c.full_name %></td>
-                  <td><%= c.phone_number || '-' %></td>
-                  <td><%= c.contribution_type %></td>
-                  <td><%= c.promise_amount > 0 ? Number(c.promise_amount).toLocaleString() : '-' %></td>
-                  <td><%= Number(c.paid_amount).toLocaleString() %></td>
-                  <td><%= Number(c.remaining_balance).toLocaleString() %></td>
-                  <td><%= c.payment_method || '-' %></td>
-                  <td>
+                  <td data-label="<%= __('id') %>"><span class="contributor-id-badge"><%= c.contributor_id || '-' %></span></td>
+                  <td data-label="<%= __('fullName') %>"><%= c.full_name %></td>
+                  <td data-label="<%= __('phone') %>"><%= c.phone_number || '-' %></td>
+                  <td data-label="<%= __('type') %>"><%= c.contribution_type %></td>
+                  <td data-label="<%= __('promise') %> (TZS)"><%= c.promise_amount > 0 ? Number(c.promise_amount).toLocaleString() : '-' %></td>
+                  <td data-label="<%= __('paid') %> (TZS)"><%= Number(c.paid_amount).toLocaleString() %></td>
+                  <td data-label="<%= __('balance') %> (TZS)"><%= Number(c.remaining_balance).toLocaleString() %></td>
+                  <td data-label="<%= __('paymentMethod') %>"><%= c.payment_method || '-' %></td>
+                  <td data-label="<%= __('status') %>">
                     <span class="badge <%= c.status === 'Done' ? 'badge-success' : 'badge-warning' %>">
                       <%= c.status %>
                     </span>
                   </td>
-                  <td><%= c.notes ? (c.notes.length > 20 ? c.notes.substring(0,20) + '...' : c.notes) : '-' %></td>
-                  <td><%= new Date(c.created_at).toLocaleDateString() %></td>
-                  <td><a href="/admin/events/<%= event.id %>/contributors/<%= c.id %>" class="btn btn-sm btn-secondary"><i class="fas fa-eye"></i></a></td>
+                  <td data-label="<%= __('notes') %>"><%= c.notes ? (c.notes.length > 20 ? c.notes.substring(0,20) + '...' : c.notes) : '-' %></td>
+                  <td data-label="<%= __('date') %>"><%= new Date(c.created_at).toLocaleDateString() %></td>
+                  <td data-label="<%= __('actions') %>">
+                    <div class="table-actions">
+                      <a href="/admin/events/<%= event.id %>/contributors/<%= c.id %>" class="btn btn-sm btn-secondary"><i class="fas fa-eye"></i> <%= __('view') %></a>
+                      <button data-action="editContributor" data-id="<%= c.id %>" data-name="<%= c.full_name %>" data-phone="<%= c.phone_number || '' %>" data-type="<%= c.contribution_type %>" data-promise="<%= c.promise_amount || 0 %>" data-paid="<%= c.paid_amount || 0 %>" class="btn btn-sm btn-secondary"><i class="fas fa-pen"></i> <%= __('edit') %></button>
+                    </div>
+                  </td>
                 </tr>
               <% }); %>
             </tbody>
@@ -310,211 +320,55 @@
         </div>
       <% } %>
     </div>
+</div>
+
+  <div id="editContributorModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content form-card" style="max-width:500px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <h3 style="margin:0;"><%= __('edit') %> Contributor</h3>
+        <button data-action="closeEditContributor" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#888;">&times;</button>
+      </div>
+      <form id="editContributorForm">
+        <input type="hidden" id="edit_contributor_id">
+        <div class="form-group">
+          <label><%= __('fullName') %> *</label>
+          <input type="text" id="edit_con_name" required>
+        </div>
+        <div class="form-group">
+          <label><%= __('phoneNumber') %></label>
+          <input type="text" id="edit_con_phone">
+        </div>
+        <div class="form-group" id="edit_promise_group">
+          <label><%= __('promiseAmount') %> (TZS)</label>
+          <input type="number" id="edit_con_promise" min="0" step="1">
+        </div>
+        <div class="form-group" id="edit_paid_group">
+          <label><%= __('amountPaid') %> (TZS)</label>
+          <input type="number" id="edit_con_paid" min="0" step="1">
+        </div>
+        <div style="display:flex;gap:0.5rem;">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <%= __('save') %></button>
+          <button type="button" data-action="closeEditContributor" class="btn btn-sm btn-secondary"><%= __('cancel') %></button>
+          <span id="editConStatus"></span>
+        </div>
+      </form>
+    </div>
   </div>
 
-  <script>
-    function toggleLang() {
-      var newLang = '<%= lang %>' === 'sw' ? 'en' : 'sw';
-      fetch('/lang/' + newLang, { method: 'POST' }).then(function(r){return r.json()}).then(function(d){if(d.success)window.location.reload()}).catch(function(){});
-    }
-    function showEditEvent() {
-      document.getElementById('editEventModal').style.display = 'flex';
-    }
-    function closeEditEvent() {
-      document.getElementById('editEventModal').style.display = 'none';
-      document.getElementById('editEventStatus').textContent = '';
-    }
-    function toggleEditType() {
-      var t = document.getElementById('edit_event_type').value;
-      document.getElementById('edit_wedding_fields').style.display = t === 'Wedding' ? 'block' : 'none';
-      document.getElementById('edit_wedding_fields2').style.display = t === 'Wedding' ? 'block' : 'none';
-      document.getElementById('edit_custom_group').style.display = t === 'Other' ? 'block' : 'none';
-      var showPerson = t !== 'Wedding';
-      document.getElementById('edit_person1_group').style.display = showPerson ? 'block' : 'none';
-      var showPerson2 = t === 'Anniversary';
-      document.getElementById('edit_person2_group').style.display = showPerson2 ? 'block' : 'none';
-      document.getElementById('edit_person1_label').textContent = showPerson2 ? '<%= __('person1') %>' : '<%= __('personName') %>';
-    }
-    document.getElementById('editEventForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      var data = {
-        name: document.getElementById('edit_name').value,
-        event_type: document.getElementById('edit_event_type').value,
-        custom_type: document.getElementById('edit_custom_type').value,
-        groom_name: document.getElementById('edit_groom_name').value,
-        bride_name: document.getElementById('edit_bride_name').value,
-        person1_name: document.getElementById('edit_person1_name').value,
-        person2_name: document.getElementById('edit_person2_name').value,
-        event_date: document.getElementById('edit_event_date').value,
-        venue: document.getElementById('edit_venue').value,
-        target_amount: document.getElementById('edit_target_amount').value
-      };
-      var status = document.getElementById('editEventStatus');
-      status.style.color = '#888';
-      status.textContent = '<%= __('saved') %>...';
-      fetch('/admin/events/<%= event.id %>/edit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      }).then(function(r) { return r.json(); })
-      .then(function(d) {
-        if (d.success) { window.location.reload(); }
-        else { status.style.color = '#c62828'; status.textContent = d.error || '<%= __('failed') %>'; }
-      })
-      .catch(function() { status.style.color = '#c62828'; status.textContent = '<%= __('failed') %>'; });
-    });
-    function copyLink() {
-      var input = document.getElementById('contributionLink');
-      input.select();
-      document.execCommand('copy');
-      var btn = event.target;
-      var orig = btn.innerHTML;
-      btn.innerHTML = '<i class="fas fa-check"></i> <%= __('copied') %>';
-      setTimeout(function() { btn.innerHTML = orig; }, 2000);
-    }
-    function copyManageLink() {
-      var input = document.getElementById('manageLink');
-      input.select();
-      document.execCommand('copy');
-      var btn = event.target;
-      var orig = btn.innerHTML;
-      btn.innerHTML = '<i class="fas fa-check"></i> <%= __('copied') %>';
-      setTimeout(function() { btn.innerHTML = orig; }, 2000);
-    }
-    function confirmDelete() {
-      if (confirm('<%= __('deleteEventConfirm') %>')) {
-        fetch('/admin/events/<%= event.id %>/delete', { method: 'POST' })
-          .then(function(r) { return r.json(); })
-          .then(function(d) {
-            if (d.success) { window.location.href = '/admin/dashboard'; }
-            else { alert('<%= __('failedDelete') %>: ' + (d.error || '<%= __('unknownError') %>')); }
-          })
-          .catch(function() { alert('<%= __('failedDeleteEvent') %>'); });
-      }
-    }
-    function changeStatus() {
-      var status = document.getElementById('statusSelect').value;
-      fetch('/admin/events/<%= event.id %>/status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: status })
-      }).then(function(r) { return r.json(); })
-      .then(function(d) { if (d.success) { window.location.reload(); } else { alert('<%= __('failed') %>'); } })
-      .catch(function() { alert('<%= __('failed') %>'); });
-    }
-    function toggleManualType() {
-      var type = document.getElementById('manual_type').value;
-      document.getElementById('manual_promise_group').style.display = type === 'promise' ? 'block' : 'none';
-      document.getElementById('manual_cash_group').style.display = type === 'cash' ? 'block' : 'none';
-    }
-    document.addEventListener('DOMContentLoaded', toggleManualType);
-
-    document.getElementById('manualEntryForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      var data = {
-        full_name: document.getElementById('manual_name').value,
-        phone_number: document.getElementById('manual_phone').value,
-        contribution_type: document.getElementById('manual_type').value,
-        promise_amount: document.getElementById('manual_promise').value,
-        amount_paid: document.getElementById('manual_amount').value,
-        payment_method: document.getElementById('manual_method').value,
-        sender_name: document.getElementById('manual_sender').value
-      };
-      fetch('/admin/events/<%= event.id %>/contributors/manual', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      })
-      .then(function(r) { return r.json(); })
-      .then(function(d) {
-        var status = document.getElementById('manualStatus');
-        if (d.success) {
-          status.className = 'result-message success';
-          status.textContent = '<%= __('added') %>';
-          status.style.display = 'inline';
-          setTimeout(function() { window.location.reload(); }, 1000);
-        } else {
-          status.className = 'result-message error';
-          status.textContent = d.error || '<%= __('failed') %>';
-          status.style.display = 'inline';
-        }
-      })
-      .catch(function() {
-        var status = document.getElementById('manualStatus');
-        status.className = 'result-message error';
-        status.textContent = '<%= __('error') %>';
-        status.style.display = 'inline';
-      });
-    });
-
-    function filterTable() {
-      var query = document.getElementById('searchInput').value.toLowerCase();
-      var typeFilter = document.getElementById('filterType').value;
-      var statusFilter = document.getElementById('filterStatus').value;
-      var rows = document.querySelectorAll('#contributorsTable tbody tr');
-      var count = 0;
-      rows.forEach(function(row) {
-        var searchText = row.getAttribute('data-search').toLowerCase();
-        var type = row.getAttribute('data-type');
-        var status = row.getAttribute('data-status');
-        var match = (!query || searchText.indexOf(query) !== -1) &&
-                     (!typeFilter || type === typeFilter) &&
-                     (!statusFilter || status === statusFilter);
-        row.style.display = match ? '' : 'none';
-        if (match) count++;
-      });
-      document.getElementById('filterCount').textContent = count + ' <%= __('of') %> ' + rows.length;
-    }
-
-    document.getElementById('searchInput').addEventListener('input', filterTable);
-    document.getElementById('filterType').addEventListener('change', filterTable);
-    document.getElementById('filterStatus').addEventListener('change', filterTable);
-  </script>
+  <meta name="page-data" content="<%= JSON.stringify({ person1: __('person1'), personName: __('personName'), saved: __('saved'), copied: __('copied'), failed: __('failed'), unknownError: __('unknownError'), failedDelete: __('failedDelete'), failedDeleteEvent: __('failedDeleteEvent'), deleteEventConfirm: __('deleteEventConfirm'), added: __('added'), error: __('error'), of: __('of'), loading: __('loading'), noNotifications: __('noNotifications'), failedToLoad: __('failedToLoad'), notifications: __('notifications'), edit: __('edit'), promiseAmount: __('promiseAmount'), amountPaid: __('amountPaid') }).replace(/'/g, ''') %>">
+  <script src="/js/app.js"></script>
+  <script src="/js/event-detail.js"></script>
+  <script src="/js/csrf.js"></script>
 
   <div id="notifPanel" class="notif-panel">
     <div class="notif-panel-header">
       <h3><%= __('notifications') %></h3>
-      <button onclick="markAllRead()" class="btn btn-sm" style="background:none;color:#1a237e;font-size:0.75rem;padding:0;"><i class="fas fa-check-double"></i> <%= __('markAllRead') %></button>
+      <button data-action="markAllRead" class="btn btn-sm" style="background:none;color:#1a237e;font-size:0.75rem;padding:0;"><i class="fas fa-check-double"></i> <%= __('markAllRead') %></button>
     </div>
     <div id="notifList" class="notif-list"><p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;"><%= __('loading') %></p></div>
   </div>
-  <div id="notifOverlay" class="notif-overlay" onclick="closeNotifications()"></div>
+  <div id="notifOverlay" class="notif-overlay" data-action="closeNotifications"></div>
 
-  <script>
-    function toggleNotifications() {
-      var panel = document.getElementById('notifPanel');
-      var overlay = document.getElementById('notifOverlay');
-      if (panel.classList.contains('open')) { panel.classList.remove('open'); overlay.style.display = 'none'; }
-      else { loadNotifications(); panel.classList.add('open'); overlay.style.display = 'block'; }
-    }
-    function closeNotifications() {
-      document.getElementById('notifPanel').classList.remove('open');
-      document.getElementById('notifOverlay').style.display = 'none';
-    }
-    function loadNotifications() {
-      var list = document.getElementById('notifList');
-      list.innerHTML = '<p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;"><%= __('loading') %></p>';
-      fetch('/api/notifications').then(function(r){return r.json()}).then(function(data){
-        list.innerHTML = '';
-        if (data.notifications.length === 0) { list.innerHTML = '<p style="text-align:center;color:#888;padding:2rem;font-size:0.85rem;"><%= __('noNotifications') %></p>'; return; }
-        data.notifications.forEach(function(n){
-          var d=new Date(n.created_at); var ds=d.toLocaleDateString()+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-          var icon=n.type==='new_promise'?'fa-handshake':n.type==='new_cash'?'fa-money-bill':'fa-check-circle';
-          var item=document.createElement('div'); item.className='notif-item'+(n.is_read?'':' unread');
-          item.innerHTML='<div class="notif-icon"><i class="fas '+icon+'"></i></div><div class="notif-body"><div class="notif-msg">'+n.message+'</div><div class="notif-time">'+ds+'</div></div>';
-          list.appendChild(item);
-        });
-        document.getElementById('notifBadge').style.display='none';
-      }).catch(function(){ list.innerHTML='<p style="text-align:center;color:#c62828;padding:1rem;font-size:0.85rem;"><%= __('failedToLoad') %></p>'; });
-    }
-    function markAllRead() {
-      fetch('/api/notifications/read',{method:'POST'}).then(function(r){return r.json()}).then(function(d){if(d.success){document.querySelectorAll('#notifList .notif-item').forEach(function(el){el.classList.remove('unread');});}}).catch(function(){});
-    }
-  </script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js').catch(function(){});
-    }
-  </script>
+  <script src="/js/notifications.js"></script>
 </body>
 </html>
