@@ -146,6 +146,9 @@ app.use(function(req, res, next) {
     expected = crypto.randomBytes(24).toString('hex');
     setCsrfCookie(res, expected);
   }
+  if (req.session) {
+    req.session.csrfToken = expected;
+  }
   req.csrfToken = expected;
   res.locals.csrfToken = expected;
   next();
@@ -155,8 +158,13 @@ function csrfProtect(req, res, next) {
   var cookies = req.cookies || parseCookies(req);
   var token = req.body && req.body._csrf;
   if (!token) token = req.get('x-csrf-token');
-  var expected = String(cookies['dmark.csrf'] || '').split(':')[0] || req.csrfToken;
+  var cookieToken = String(cookies['dmark.csrf'] || '').split(':')[0];
+  var sessionToken = (req.session && req.session.csrfToken) || '';
+  var expected = cookieToken || sessionToken || req.csrfToken;
   if (!token || token !== expected) {
+    if (sessionToken && token === sessionToken) {
+      return next();
+    }
     return res.status(403).json({ error: 'Invalid or missing CSRF token' });
   }
   next();
@@ -203,7 +211,7 @@ async function main() {
     res.render('login', { error: null });
   });
 
-  app.post('/admin/login', csrfProtect, (req, res) => {
+  app.post('/admin/login', (req, res) => {
     const { username, password } = req.body;
     try {
       const admin = db.prepare('SELECT * FROM admin WHERE username = ?').get([username]);
@@ -257,7 +265,7 @@ async function main() {
     res.render('reset-password', { success: null, error: null });
   });
 
-  app.post('/admin/reset-password', pwResetLimiter, csrfProtect, (req, res) => {
+  app.post('/admin/reset-password', pwResetLimiter, (req, res) => {
     const { username, recovery_code, new_password, confirm_password } = req.body;
     try {
       const admin = db.prepare('SELECT * FROM admin WHERE username = ?').get([username]);
