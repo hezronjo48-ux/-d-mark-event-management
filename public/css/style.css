@@ -1081,6 +1081,55 @@ nav {
   }
 }
 
+.notif-item a, .notif-item .notif-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+.notif-item a:hover, .notif-item .notif-link:hover {
+  text-decoration: none;
+}
+
+.notif-toast-wrap {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 360px;
+}
+.notif-toast {
+  background: #1a237e;
+  color: #fff;
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+  cursor: pointer;
+  animation: toastIn 0.3s ease;
+  position: relative;
+}
+.notif-toast.toast-hide { animation: toastOut 0.3s ease forwards; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toastOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(12px); } }
+.notif-toast .toast-title { font-weight: 600; font-size: 0.85rem; margin-bottom: 0.2rem; }
+.notif-toast .toast-msg { font-size: 0.8rem; opacity: 0.9; }
+.notif-toast .toast-close {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.6rem;
+  border: none;
+  background: none;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 0.7;
+  padding: 0.2rem;
+  line-height: 1;
+}
+.notif-toast .toast-close:hover { opacity: 1; }
+
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -1232,5 +1281,218 @@ nav {
   .radio-group {
     flex-direction: column;
     gap: 0.5rem;
+  }
+}
+
+/* ===== Mobile-first improvements ===== */
+
+/* Prevent horizontal page overflow from long names/links */
+body {
+  overflow-x: hidden;
+}
+
+h1, h2, h3, .wedding-title, .event-details p, .notif-msg, .link-copy input {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.link-copy {
+  flex-wrap: wrap;
+}
+
+.link-copy .btn {
+  white-space: nowrap;
+}
+
+/* General form grid used by admin forms */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.form-grid > .form-group {
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .section-header > div {
+    width: 100%;
+  }
+
+  .search-bar input,
+  .search-bar select {
+    min-width: 100% !important;
+    width: 100%;
+  }
+
+  .search-bar {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .chart-row {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .chart-label {
+    width: 100%;
+    text-align: left;
+  }
+
+  .chart-value {
+    width: 100%;
+    text-align: left;
+  }
+
+  .progress-bar-fill {
+    font-size: 0.7rem;
+  }
+
+  .notif-panel {
+    width: 100%;
+    right: -100%;
+  }
+
+  .modal-overlay {
+    padding: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .modal-content.form-card {
+    padding: 1.25rem;
+  }
+
+  /* Tables become stacked cards */
+  .table-responsive {
+    overflow: visible;
+    -webkit-overflow-scrolling: auto;
+  }
+
+  .table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+    width: 100%;
+  }
+
+  .table thead {
+    display: none;
+  }
+
+  .table tr {
+    margin-bottom: 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+    background: #fff;
+  }
+
+  .table td {
+    padding: 0.55rem 0.75rem 0.55rem 45%;
+    text-align: right;
+    position: relative;
+    border-bottom: 1px solid #f5f5f5;
+    min-height: 1.5em;
+  }
+
+  .table td:last-child {
+    border-bottom: none;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 0.75rem;
+    top: 0.55rem;
+    width: 40%;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.7rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .table tr:hover td {
+    background: #fff;
+  }
+
+  /* Action cells stretch full width */
+  .table td:last-child .btn {
+    display: block;
+    width: 100%;
+    text-align: center;
+  }
+
+  .event-card h1 {
+    font-size: 1.5rem;
+  }  .link-copy {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .link-copy input {
+    width: 100%;
+  }
+
+  .link-copy .btn {
+    width: 100%;
+  }
+}
+
+.table-actions {
+  display: inline-flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.table-actions .btn {
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .table-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 0.45rem;
+  }
+
+  .table-actions .btn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .table td:last-child .btn,
+  .table td .btn {
+    padding: 0.55rem 0.75rem;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .table td:last-child .btn i,
+  .table td .btn i {
+    font-size: 0.9rem;
   }
 }

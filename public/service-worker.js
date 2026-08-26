@@ -1,4 +1,4 @@
-var CACHE_NAME = 'dmark-v4';
+var CACHE_NAME = 'dmark-v5';
 var STATIC_URLS = [
   '/css/style.css',
   '/manifest.json',

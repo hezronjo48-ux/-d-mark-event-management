@@ -7,6 +7,11 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#1a237e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
+  <meta name="csrf-token" content="<%= csrfToken %>">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
@@ -20,7 +25,7 @@
       <div class="nav-brand"><%= __('brand') %></div>
       <div class="nav-links">
         <a href="<%= contributionLink %>" target="_blank"><i class="fas fa-external-link-alt"></i> <%= __('contribute') %></a>
-        <a href="javascript:void(0)" onclick="toggleLang()" class="lang-toggle"><%= lang === 'sw' ? 'EN' : 'SW' %></a>
+        <a href="#" data-action="toggleLang" class="lang-toggle"><%= lang === 'sw' ? 'EN' : 'SW' %></a>
       </div>
     </div>
   </nav>
@@ -124,18 +129,18 @@
             <tbody>
               <% contributors.forEach(c => { %>
                 <tr data-type="<%= c.contribution_type %>" data-status="<%= c.status %>" data-search="<%= (c.contributor_id || '') + ' ' + c.full_name + ' ' + (c.phone_number || '') %>">
-                  <td><span class="contributor-id-badge"><%= c.contributor_id || '-' %></span></td>
-                  <td><%= c.full_name %></td>
-                  <td><%= c.phone_number || '-' %></td>
-                  <td><%= c.contribution_type %></td>
-                  <td><%= c.promise_amount > 0 ? Number(c.promise_amount).toLocaleString() : '-' %></td>
-                  <td><%= Number(c.paid_amount).toLocaleString() %></td>
-                  <td><%= Number(c.remaining_balance).toLocaleString() %></td>
-                  <td><%= c.payment_method || '-' %></td>
-                  <td>
+                  <td data-label="<%= __('id') %>"><span class="contributor-id-badge"><%= c.contributor_id || '-' %></span></td>
+                  <td data-label="<%= __('fullName') %>"><%= c.full_name %></td>
+                  <td data-label="<%= __('phone') %>"><%= c.phone_number || '-' %></td>
+                  <td data-label="<%= __('type') %>"><%= c.contribution_type %></td>
+                  <td data-label="<%= __('promised') %> (TZS)"><%= c.promise_amount > 0 ? Number(c.promise_amount).toLocaleString() : '-' %></td>
+                  <td data-label="<%= __('paid') %> (TZS)"><%= Number(c.paid_amount).toLocaleString() %></td>
+                  <td data-label="<%= __('remaining') %> (TZS)"><%= Number(c.remaining_balance).toLocaleString() %></td>
+                  <td data-label="<%= __('paymentMethod') %>"><%= c.payment_method || '-' %></td>
+                  <td data-label="<%= __('status') %>">
                     <span class="badge <%= c.status === 'Done' ? 'badge-success' : 'badge-warning' %>"><%= c.status %></span>
                   </td>
-                  <td><%= new Date(c.created_at).toLocaleDateString() %></td>
+                  <td data-label="<%= __('date') %>"><%= new Date(c.created_at).toLocaleDateString() %></td>
                 </tr>
               <% }); %>
             </tbody>
@@ -164,12 +169,12 @@
           <tbody>
             <% debtors.forEach(function(d) { %>
               <tr>
-                <td><span class="contributor-id-badge"><%= d.contributor_id || '-' %></span></td>
-                <td><%= d.full_name %></td>
-                <td><%= d.phone_number || '-' %></td>
-                <td><%= Number(d.promise_amount).toLocaleString() %></td>
-                <td><%= Number(d.paid_amount).toLocaleString() %></td>
-                <td><strong style="color:#c62828;"><%= Number(d.remaining_balance).toLocaleString() %></strong></td>
+                <td data-label="<%= __('id') %>"><span class="contributor-id-badge"><%= d.contributor_id || '-' %></span></td>
+                <td data-label="<%= __('fullName') %>"><%= d.full_name %></td>
+                <td data-label="<%= __('phone') %>"><%= d.phone_number || '-' %></td>
+                <td data-label="<%= __('promised') %> (TZS)"><%= Number(d.promise_amount).toLocaleString() %></td>
+                <td data-label="<%= __('paid') %> (TZS)"><%= Number(d.paid_amount).toLocaleString() %></td>
+                <td data-label="<%= __('remaining') %> (TZS)"><strong style="color:#c62828;"><%= Number(d.remaining_balance).toLocaleString() %></strong></td>
               </tr>
             <% }); %>
           </tbody>
@@ -200,37 +205,9 @@
     <% } %>
   </div>
 
-  <script>
-    function toggleLang() {
-      var newLang = '<%= lang %>' === 'sw' ? 'en' : 'sw';
-      fetch('/lang/' + newLang, { method: 'POST' }).then(function(r){return r.json()}).then(function(d){if(d.success)window.location.reload()}).catch(function(){});
-    }
-    function filterTable() {
-      var query = document.getElementById('searchInput').value.toLowerCase();
-      var typeFilter = document.getElementById('filterType').value;
-      var statusFilter = document.getElementById('filterStatus').value;
-      var rows = document.querySelectorAll('#contributorsTable tbody tr');
-      var count = 0;
-      rows.forEach(function(row) {
-        var searchText = row.getAttribute('data-search').toLowerCase();
-        var type = row.getAttribute('data-type');
-        var status = row.getAttribute('data-status');
-        var match = (!query || searchText.indexOf(query) !== -1) &&
-                     (!typeFilter || type === typeFilter) &&
-                     (!statusFilter || status === statusFilter);
-        row.style.display = match ? '' : 'none';
-        if (match) count++;
-      });
-      document.getElementById('filterCount').textContent = count + ' <%= __('of') %> ' + rows.length;
-    }
-    document.getElementById('searchInput').addEventListener('input', filterTable);
-    document.getElementById('filterType').addEventListener('change', filterTable);
-    document.getElementById('filterStatus').addEventListener('change', filterTable);
-  </script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js').catch(function(){});
-    }
-  </script>
+  <meta name="page-data" content="<%= JSON.stringify({ of: __('of') }).replace(/'/g, '&#39;') %>">
+  <script src="/js/app.js"></script>
+  <script src="/js/csrf.js"></script>
+  <script src="/js/event-manage.js"></script>
 </body>
 </html>

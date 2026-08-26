@@ -7,6 +7,11 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#1a237e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
+  <meta name="csrf-token" content="<%= csrfToken %>">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
@@ -23,11 +28,11 @@
         <a href="/admin/events/create" class="active"><%= __('createEvent') %></a>
         <a href="/admin/debtors"><%= __('debtors') %></a>
         <a href="/admin/activity-log"><%= __('activityLog') %></a>
-        <a href="javascript:void(0)" onclick="toggleNotifications()" class="notif-bell" style="position:relative;">
+        <a href="#" data-action="toggleNotifications" class="notif-bell" style="position:relative;">
           <i class="fas fa-bell"></i>
           <span id="notifBadge" class="notif-badge" style="<%= unreadCount > 0 ? '' : 'display:none;' %>"><%= unreadCount %></span>
         </a>
-        <a href="javascript:void(0)" onclick="toggleLang()" class="lang-toggle"><%= lang === 'sw' ? 'EN' : 'SW' %></a>
+        <a href="#" data-action="toggleLang" class="lang-toggle"><%= lang === 'sw' ? 'EN' : 'SW' %></a>
         <a href="/admin/change-password"><%= __('changePassword') %></a>
         <a href="/admin/logout"><%= __('logout') %></a>
       </div>
@@ -43,6 +48,7 @@
       <% } %>
 
       <form method="POST" action="/admin/events/create">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="form-group">
           <label for="name"><%= __('eventNameLabel') %></label>
           <input type="text" id="name" name="name" required placeholder="<%= __('eventNamePlaceholder') %>" value="<%= form ? form.name : '' %>">
@@ -50,7 +56,7 @@
 
         <div class="form-group">
           <label for="event_type"><%= __('eventType') %></label>
-          <select id="event_type" name="event_type" onchange="toggleEventType()">
+          <select id="event_type" name="event_type" data-action="toggleEventType">
             <option value="Wedding" <%= form && form.event_type === 'Wedding' ? 'selected' : '' %>><%= __('wedding') %></option>
             <option value="Birthday" <%= form && form.event_type === 'Birthday' ? 'selected' : '' %>><%= __('birthday') %></option>
             <option value="Graduation" <%= form && form.event_type === 'Graduation' ? 'selected' : '' %>><%= __('graduation') %></option>
@@ -114,103 +120,20 @@
     </div>
   </div>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', toggleEventType);
-    function toggleEventType() {
-      var type = document.getElementById('event_type').value;
-      var weddingFields = document.getElementById('weddingFields');
-      var personFields = document.getElementById('personFields');
-      var person2Group = document.getElementById('person2Group');
-      var personRow = document.getElementById('personRow');
-      var person1Label = document.getElementById('person1Label');
-      var customField = document.getElementById('customTypeField');
-      var customInput = document.getElementById('custom_type');
-
-      if (type === 'Other') {
-        customField.style.display = 'block';
-        customInput.required = true;
-      } else {
-        customField.style.display = 'none';
-        customInput.required = false;
-      }
-
-      if (type === 'Wedding') {
-        weddingFields.style.display = 'block';
-        personFields.style.display = 'none';
-        document.getElementById('groom_name').required = true;
-        document.getElementById('bride_name').required = true;
-        document.getElementById('person1_name').required = false;
-        document.getElementById('person2_name').required = false;
-      } else {
-        weddingFields.style.display = 'none';
-        personFields.style.display = 'block';
-        document.getElementById('groom_name').required = false;
-        document.getElementById('bride_name').required = false;
-
-        if (type === 'Anniversary') {
-          person2Group.style.display = 'block';
-          personRow.style.gridTemplateColumns = '1fr 1fr';
-          person1Label.textContent = '<%= __('person1') %>';
-          document.getElementById('person2_name').required = true;
-        } else {
-          person2Group.style.display = 'none';
-          personRow.style.gridTemplateColumns = '1fr';
-          person1Label.textContent = '<%= __('personName') %>';
-          document.getElementById('person2_name').required = false;
-        }
-        document.getElementById('person1_name').required = true;
-      }
-    }
-    function toggleLang() {
-      var newLang = '<%= lang %>' === 'sw' ? 'en' : 'sw';
-      fetch('/lang/' + newLang, { method: 'POST' }).then(function(r){return r.json()}).then(function(d){if(d.success)window.location.reload()}).catch(function(){});
-    }
-  </script>
+  <meta name="page-data" content="<%= JSON.stringify({ person1: __('person1'), personName: __('personName'), loading: __('loading'), noNotifications: __('noNotifications'), failedToLoad: __('failedToLoad'), notifications: __('notifications') }).replace(/'/g, '&#39;') %>">
+  <script src="/js/app.js"></script>
+  <script src="/js/create-event.js"></script>
+  <script src="/js/csrf.js"></script>
 
   <div id="notifPanel" class="notif-panel">
     <div class="notif-panel-header">
       <h3><%= __('notifications') %></h3>
-      <button onclick="markAllRead()" class="btn btn-sm" style="background:none;color:#1a237e;font-size:0.75rem;padding:0;"><i class="fas fa-check-double"></i> <%= __('markAllRead') %></button>
+      <button data-action="markAllRead" class="btn btn-sm" style="background:none;color:#1a237e;font-size:0.75rem;padding:0;"><i class="fas fa-check-double"></i> <%= __('markAllRead') %></button>
     </div>
     <div id="notifList" class="notif-list"><p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;"><%= __('loading') %></p></div>
   </div>
-  <div id="notifOverlay" class="notif-overlay" onclick="closeNotifications()"></div>
+  <div id="notifOverlay" class="notif-overlay" data-action="closeNotifications"></div>
 
-  <script>
-    function toggleNotifications() {
-      var panel = document.getElementById('notifPanel');
-      var overlay = document.getElementById('notifOverlay');
-      if (panel.classList.contains('open')) { panel.classList.remove('open'); overlay.style.display = 'none'; }
-      else { loadNotifications(); panel.classList.add('open'); overlay.style.display = 'block'; }
-    }
-    function closeNotifications() {
-      document.getElementById('notifPanel').classList.remove('open');
-      document.getElementById('notifOverlay').style.display = 'none';
-    }
-    function loadNotifications() {
-      var list = document.getElementById('notifList');
-      list.innerHTML = '<p style="text-align:center;color:#888;padding:1rem;font-size:0.85rem;"><%= __('loading') %></p>';
-      fetch('/api/notifications').then(function(r){return r.json()}).then(function(data){
-        list.innerHTML = '';
-        if (data.notifications.length === 0) { list.innerHTML = '<p style="text-align:center;color:#888;padding:2rem;font-size:0.85rem;"><%= __('noNotifications') %></p>'; return; }
-        data.notifications.forEach(function(n){
-          var d=new Date(n.created_at); var ds=d.toLocaleDateString()+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-          var icon=n.type==='new_promise'?'fa-handshake':n.type==='new_cash'?'fa-money-bill':'fa-check-circle';
-          var item=document.createElement('div'); item.className='notif-item'+(n.is_read?'':' unread');
-          item.innerHTML='<div class="notif-icon"><i class="fas '+icon+'"></i></div><div class="notif-body"><div class="notif-msg">'+n.message+'</div><div class="notif-time">'+ds+'</div></div>';
-          list.appendChild(item);
-        });
-        document.getElementById('notifBadge').style.display='none';
-      }).catch(function(){ list.innerHTML='<p style="text-align:center;color:#c62828;padding:1rem;font-size:0.85rem;"><%= __('failedToLoad') %></p>'; });
-    }
-    function markAllRead() {
-      fetch('/api/notifications/read',{method:'POST'}).then(function(r){return r.json()}).then(function(d){if(d.success){document.querySelectorAll('#notifList .notif-item').forEach(function(el){el.classList.remove('unread');});}}).catch(function(){});
-    }
-  </script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js').catch(function(){});
-    }
-  </script>
+  <script src="/js/notifications.js"></script>
 </body>
 </html>

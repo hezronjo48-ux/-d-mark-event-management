@@ -7,6 +7,28 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#1a237e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <meta name="page-data" content='<%= JSON.stringify({
+    loading: __('loading'),
+    noPromises: __('noPromises'),
+    failedTryAgain: __('failedTryAgain'),
+    select: __('select'),
+    error: __('error'),
+    errorTryAgain: __('errorOccurredShort') + '. ' + __('tryAgain'),
+    promise: __('promise'),
+    paid: __('paid'),
+    balance: __('balance'),
+    saveThisId: __('saveThisId'),
+    enterNameOrIdMsg: __('enterNameOrId'),
+    pleaseEnter: __('enterNameOrId'),
+    anError: __('errorOccurred'),
+    invalidAmount: __('enterValidPaymentAmount'),
+    yourContributorId: __('yourContributorId')
+  }).replace(/'/g, "&#39;") %>'>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
@@ -20,9 +42,9 @@
     .autofill-item .af-phone { font-size:0.75rem; color:#888; }
   </style>
 </head>
-<body>
+<body data-event-id="<%= event.id %>">
   <div class="public-page">
-    <button onclick="toggleLang()" class="lang-toggle-public"><%= lang === 'sw' ? 'English' : 'Kiswahili' %></button>
+    <button data-action="toggleLang" class="lang-toggle-public"><%= lang === 'sw' ? 'English' : 'Kiswahili' %></button>
     <div class="wedding-header">
       <h1 class="wedding-title"><%= event.event_type === 'Wedding' ? (event.groom_name + ' & ' + event.bride_name) : event.event_type === 'Anniversary' ? (event.person1_name + ' & ' + (event.person2_name || '')) : (event.person1_name || '') %></h1>
       <p class="wedding-subtitle"><%= event.event_type || __('wedding') %> <%= __('contribute') %></p>
@@ -36,8 +58,8 @@
 
     <div class="contribution-container">
       <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('new')"><%= __('newContribution') %></button>
-        <button class="tab-btn" onclick="switchTab('update')"><%= __('updatePromise') %></button>
+        <button class="tab-btn active" data-action="switchTab" data-tab="new"><%= __('newContribution') %></button>
+        <button class="tab-btn" data-action="switchTab" data-tab="update"><%= __('updatePromise') %></button>
       </div>
 
       <div id="tab-new" class="tab-content active">
@@ -61,11 +83,11 @@
             <label><%= __('typeLabel') %></label>
             <div class="radio-group">
               <label class="radio-label">
-                <input type="radio" name="contribution_type" value="promise" checked onchange="toggleContributionType()">
+                <input type="radio" name="contribution_type" value="promise" checked data-action="toggleContributionType">
                 <%= __('promiseRadio') %>
               </label>
               <label class="radio-label">
-                <input type="radio" name="contribution_type" value="cash" onchange="toggleContributionType()">
+                <input type="radio" name="contribution_type" value="cash" data-action="toggleContributionType">
                 <%= __('cashRadio') %>
               </label>
             </div>
@@ -110,18 +132,21 @@
           <p style="font-size:0.85rem;color:#666;margin-bottom:1rem;"><%= __('promisePaymentHint') %></p>
           <div class="form-group">
             <label for="search_name"><%= __('fullNameOrId') %></label>
-            <input type="text" id="search_name" placeholder="<%= __('enterNameOrId') %>">
+            <div class="autofill-wrap">
+              <input type="text" id="search_name" placeholder="<%= __('enterNameOrId') %>" autocomplete="off">
+              <div id="promiseAutofillDropdown" class="autofill-dropdown"></div>
+            </div>
           </div>
-          <button onclick="searchPromise()" class="btn btn-primary btn-full"><%= __('search') %></button>
+          <button data-action="searchPromise" class="btn btn-primary btn-full"><%= __('search') %></button>
           <div style="text-align:center;margin-top:0.75rem;">
-            <button onclick="browseAllPromises()" class="btn btn-sm btn-secondary" style="font-size:0.8rem;"><i class="fas fa-list"></i> <%= __('browseAllPromises') %></button>
+            <button data-action="browseAllPromises" class="btn btn-sm btn-secondary" style="font-size:0.8rem;"><i class="fas fa-list"></i> <%= __('browseAllPromises') %></button>
           </div>
         </div>
 
         <div id="searchResultsList" style="display:none;">
           <p style="font-size:0.85rem;color:#666;margin-bottom:0.75rem;"><%= __('multipleMatches') %></p>
           <div id="matchesContainer"></div>
-          <button onclick="resetSearch()" class="btn btn-sm btn-secondary" style="margin-top:0.75rem;"><%= __('searchAgain') %></button>
+          <button data-action="resetSearch" class="btn btn-sm btn-secondary" style="margin-top:0.75rem;"><%= __('searchAgain') %></button>
         </div>
 
         <div id="promiseInfo" style="display:none;">
@@ -179,12 +204,12 @@
                 <input type="text" id="sender_name_update" placeholder="<%= __('senderNameHint') %>">
               </div>
 
-              <button onclick="submitPayment()" class="btn btn-primary btn-full"><%= __('submitPayment') %></button>
+              <button data-action="submitPayment" class="btn btn-primary btn-full"><%= __('submitPayment') %></button>
             </div>
           </div>
 
           <div style="margin-top:1rem;">
-            <button onclick="resetSearch()" class="btn btn-sm btn-secondary"><%= __('searchAgain') %></button>
+            <button data-action="resetSearch" class="btn btn-sm btn-secondary"><%= __('searchAgain') %></button>
           </div>
         </div>
 
@@ -194,323 +219,8 @@
     </div>
   </div>
 
-  <script>
-    var LANG = {
-      loading: '<%= __('loading') %>',
-      noPromises: '<%= __('noPromises') %>',
-      failedTryAgain: '<%= __('failedTryAgain') %>',
-      select: '<%= __('select') %>',
-      error: '<%= __('error') %>',
-      errorTryAgain: '<%= __('errorOccurredShort') %>. <%= __('tryAgain') %>',
-      promise: '<%= __('promise') %>',
-      paid: '<%= __('paid') %>',
-      balance: '<%= __('balance') %>',
-      saveThisId: '<%= __('saveThisId') %>',
-      enterNameOrIdMsg: '<%= __('enterNameOrId') %>',
-      pleaseEnter: 'Please enter your full name or contributor ID',
-      anError: '<%= __('errorOccurred') %>',
-      invalidAmount: 'Please enter a valid payment amount',
-      yourContributorId: '<%= __('yourContributorId') %>',
-    };
-
-    document.addEventListener('DOMContentLoaded', function() { toggleContributionType(); });
-    function toggleLang() {
-      var newLang = '<%= lang %>' === 'sw' ? 'en' : 'sw';
-      fetch('/lang/' + newLang, { method: 'POST' }).then(function(r){return r.json()}).then(function(d){if(d.success)window.location.reload()}).catch(function(){});
-    }
-    (function() {
-      var input = document.getElementById('full_name');
-      var dropdown = document.getElementById('autofillDropdown');
-      var phoneInput = document.getElementById('phone_number');
-      var debounceTimer;
-      var selected = false;
-
-      input.addEventListener('input', function() {
-        selected = false;
-        var val = this.value.trim();
-        if (val.length < 2) { dropdown.style.display = 'none'; return; }
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(function() {
-          fetch('/api/contributor/autofill', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: val })
-          })
-          .then(function(r){return r.json()})
-          .then(function(data) {
-            if (data.matches && data.matches.length > 0 && !selected) {
-              dropdown.innerHTML = '';
-              data.matches.forEach(function(m) {
-                var item = document.createElement('div');
-                item.className = 'autofill-item';
-                item.innerHTML = '<div>' + m.full_name + '</div>' + (m.phone_number ? '<div class="af-phone">' + m.phone_number + '</div>' : '');
-                item.addEventListener('click', function() {
-                  input.value = m.full_name;
-                  if (m.phone_number) phoneInput.value = m.phone_number;
-                  selected = true;
-                  dropdown.style.display = 'none';
-                });
-                dropdown.appendChild(item);
-              });
-              dropdown.style.display = 'block';
-            } else {
-              dropdown.style.display = 'none';
-            }
-          })
-          .catch(function(){ dropdown.style.display = 'none'; });
-        }, 300);
-      });
-
-      document.addEventListener('click', function(e) {
-        if (!e.target.closest('.autofill-wrap')) dropdown.style.display = 'none';
-      });
-    })();
-    function switchTab(tab) {
-      document.querySelectorAll('.tab-btn').forEach(function(btn) { btn.classList.remove('active'); });
-      document.querySelectorAll('.tab-content').forEach(function(content) { content.classList.remove('active'); });
-      if (tab === 'new') {
-        document.querySelectorAll('.tab-btn')[0].classList.add('active');
-        document.getElementById('tab-new').classList.add('active');
-      } else {
-        document.querySelectorAll('.tab-btn')[1].classList.add('active');
-        document.getElementById('tab-update').classList.add('active');
-      }
-    }
-    function toggleContributionType() {
-      var type = document.querySelector('input[name="contribution_type"]:checked').value;
-      document.getElementById('promiseFields').style.display = type === 'promise' ? 'block' : 'none';
-      document.getElementById('cashFields').style.display = type === 'cash' ? 'block' : 'none';
-      if (type === 'promise') {
-        document.getElementById('promise_amount').required = true;
-        document.getElementById('amount_paid').required = false;
-        document.getElementById('payment_method').required = false;
-      } else {
-        document.getElementById('promise_amount').required = false;
-        document.getElementById('amount_paid').required = true;
-        document.getElementById('payment_method').required = true;
-      }
-    }
-    document.getElementById('contributionForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      var formData = new FormData(this);
-      var data = {};
-      formData.forEach(function(value, key) { data[key] = value; });
-      var resultDiv = document.getElementById('contributionResult');
-      resultDiv.className = 'result-message';
-      fetch('/api/contribute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      })
-      .then(function(response) { return response.json(); })
-      .then(function(result) {
-        if (result.success) {
-          resultDiv.className = 'result-message success';
-          resultDiv.innerHTML = result.message + (result.contributor_id ? '<br><strong><%= __('yourContributorId') %> ' + result.contributor_id + '</strong><br><small style="font-size:0.75rem;">' + LANG.saveThisId + '</small>' : '');
-          document.getElementById('contributionForm').reset();
-          toggleContributionType();
-        } else {
-          resultDiv.className = 'result-message error';
-          resultDiv.textContent = result.error || LANG.errorTryAgain;
-        }
-      })
-      .catch(function() {
-        resultDiv.className = 'result-message error';
-        resultDiv.textContent = LANG.errorTryAgain;
-      });
-    });
-    function browseAllPromises() {
-      var searchSection = document.getElementById('searchSection');
-      var searchResultsList = document.getElementById('searchResultsList');
-      var resultDiv = document.getElementById('searchResult');
-      var container = document.getElementById('matchesContainer');
-      resultDiv.className = 'result-message';
-      resultDiv.style.display = 'none';
-      container.innerHTML = '<p style="text-align:center;color:#888;padding:1rem;">' + LANG.loading + '</p>';
-      searchResultsList.style.display = 'block';
-      fetch('/api/promise/list', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event_id: '<%= event.id %>' })
-      })
-      .then(function(r) { return r.json(); })
-      .then(function(result) {
-        container.innerHTML = '';
-        if (result.promises && result.promises.length > 0) {
-          window._promiseMatches = result.promises;
-          result.promises.forEach(function(p) {
-            var card = document.createElement('div');
-            card.className = 'match-card';
-            card.innerHTML =
-              '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">' +
-              '  <div>' +
-              '    <strong>' + p.full_name + '</strong>' +
-              '    <span class="contributor-id-badge" style="margin-left:0.5rem;">' + (p.contributor_id || '-') + '</span>' +
-              '  </div>' +
-              '  <span class="badge ' + (p.status === 'Done' ? 'badge-success' : 'badge-warning') + '">' + p.status + '</span>' +
-              '</div>' +
-              '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;margin-top:0.5rem;font-size:0.8rem;color:#666;">' +
-              '  <div>' + LANG.promise + ': TZS ' + Number(p.promise_amount).toLocaleString() + '</div>' +
-              '  <div>' + LANG.paid + ': TZS ' + Number(p.paid_amount).toLocaleString() + '</div>' +
-              '  <div>' + LANG.balance + ': TZS ' + Number(p.remaining_balance).toLocaleString() + '</div>' +
-              '</div>' +
-              '<button onclick="selectPromise(' + p.id + ')" class="btn btn-sm btn-primary" style="margin-top:0.5rem;width:100%;">' + LANG.select + '</button>';
-            container.appendChild(card);
-          });
-          searchSection.style.display = 'none';
-        } else {
-          container.innerHTML = '<p style="text-align:center;color:#888;padding:1rem;">' + LANG.noPromises + '</p>';
-          searchSection.style.display = 'none';
-        }
-      })
-      .catch(function() {
-        container.innerHTML = '<p style="text-align:center;color:#c62828;padding:1rem;">' + LANG.failedTryAgain + '</p>';
-      });
-    }
-    function showPromiseDetails(promise) {
-      document.getElementById('displayContributorId').textContent = promise.contributor_id || '-';
-      document.getElementById('displayPromiseName').textContent = promise.full_name;
-      document.getElementById('displayPromiseAmount').textContent = 'TZS ' + Number(promise.promise_amount).toLocaleString();
-      document.getElementById('displayTotalPaid').textContent = 'TZS ' + Number(promise.paid_amount).toLocaleString();
-      document.getElementById('displayRemainingBalance').textContent = 'TZS ' + Number(promise.remaining_balance).toLocaleString();
-      var statusTag = document.getElementById('displayStatusTag');
-      statusTag.textContent = promise.status;
-      statusTag.className = 'badge ' + (promise.status === 'Done' ? 'badge-success' : 'badge-warning');
-      document.getElementById('promiseContributorId').value = promise.id;
-      document.getElementById('searchSection').style.display = 'none';
-      document.getElementById('searchResultsList').style.display = 'none';
-      document.getElementById('searchResult').style.display = 'none';
-      document.getElementById('promiseInfo').style.display = 'block';
-      var paymentForm = document.getElementById('paymentFormSection');
-      paymentForm.style.display = promise.remaining_balance <= 0 ? 'none' : 'block';
-    }
-    function selectPromise(id) {
-      var promise = window._promiseMatches.find(function(p) { return p.id === id; });
-      if (promise) showPromiseDetails(promise);
-    }
-    function searchPromise() {
-      var input = document.getElementById('search_name').value.trim();
-      var resultDiv = document.getElementById('searchResult');
-      var promiseInfo = document.getElementById('promiseInfo');
-      var searchSection = document.getElementById('searchSection');
-      var searchResultsList = document.getElementById('searchResultsList');
-      resultDiv.className = 'result-message';
-      searchResultsList.style.display = 'none';
-      if (!input) {
-        resultDiv.className = 'result-message error';
-        resultDiv.textContent = LANG.pleaseEnter;
-        resultDiv.style.display = 'block';
-        return;
-      }
-      var body = { event_id: '<%= event.id %>' };
-      var isId = /^CNT-\d+$/i.test(input);
-      if (isId) { body.contributor_id = input.toUpperCase(); }
-      else { body.full_name = input; }
-      fetch('/api/promise/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
-      .then(function(response) { return response.json(); })
-      .then(function(result) {
-        if (result.found && result.promises.length > 0) {
-          window._promiseMatches = result.promises;
-          if (result.promises.length === 1 || isId) { showPromiseDetails(result.promises[0]); }
-          else {
-            var container = document.getElementById('matchesContainer');
-            container.innerHTML = '';
-            result.promises.forEach(function(p) {
-              var card = document.createElement('div');
-              card.className = 'match-card';
-              card.innerHTML =
-                '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">' +
-                '  <div>' +
-                '    <strong>' + p.full_name + '</strong>' +
-                '    <span class="contributor-id-badge" style="margin-left:0.5rem;">' + (p.contributor_id || '-') + '</span>' +
-                '  </div>' +
-                '  <span class="badge ' + (p.status === 'Done' ? 'badge-success' : 'badge-warning') + '">' + p.status + '</span>' +
-                '</div>' +
-                '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;margin-top:0.5rem;font-size:0.8rem;color:#666;">' +
-                '  <div>' + LANG.promise + ': TZS ' + Number(p.promise_amount).toLocaleString() + '</div>' +
-                '  <div>' + LANG.paid + ': TZS ' + Number(p.paid_amount).toLocaleString() + '</div>' +
-                '  <div>' + LANG.balance + ': TZS ' + Number(p.remaining_balance).toLocaleString() + '</div>' +
-                '</div>' +
-                '<button onclick="selectPromise(' + p.id + ')" class="btn btn-sm btn-primary" style="margin-top:0.5rem;width:100%;">' + LANG.select + '</button>';
-              container.appendChild(card);
-            });
-            searchSection.style.display = 'none';
-            resultDiv.style.display = 'none';
-            searchResultsList.style.display = 'block';
-          }
-        } else {
-          resultDiv.className = 'result-message error';
-          resultDiv.textContent = result.message;
-          promiseInfo.style.display = 'none';
-          searchResultsList.style.display = 'none';
-          resultDiv.style.display = 'block';
-        }
-      })
-      .catch(function() {
-        resultDiv.className = 'result-message error';
-        resultDiv.textContent = LANG.errorTryAgain;
-        resultDiv.style.display = 'block';
-      });
-    }
-    function submitPayment() {
-      var contributorId = document.getElementById('promiseContributorId').value;
-      var amount = document.getElementById('payment_amount').value;
-      var paymentMethod = document.getElementById('payment_method_update').value;
-      var senderName = document.getElementById('sender_name_update').value;
-      var resultDiv = document.getElementById('paymentResult');
-      resultDiv.className = 'result-message';
-      if (!amount || parseFloat(amount) <= 0) {
-        resultDiv.className = 'result-message error';
-        resultDiv.textContent = LANG.invalidAmount;
-        return;
-      }
-      fetch('/api/promise/pay', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contributor_id: contributorId, amount: amount, payment_method: paymentMethod, sender_name: senderName })
-      })
-      .then(function(response) { return response.json(); })
-      .then(function(result) {
-        if (result.success) {
-          resultDiv.className = 'result-message success';
-          resultDiv.textContent = result.message;
-          document.getElementById('displayTotalPaid').textContent = 'TZS ' + Number(result.data.paid_amount).toLocaleString();
-          document.getElementById('displayRemainingBalance').textContent = 'TZS ' + Number(result.data.remaining_balance).toLocaleString();
-          var statusTag = document.getElementById('displayStatusTag');
-          statusTag.textContent = result.data.status;
-          statusTag.className = 'badge ' + (result.data.status === 'Done' ? 'badge-success' : 'badge-warning');
-          document.getElementById('payment_amount').value = '';
-          document.getElementById('payment_method_update').value = '';
-          document.getElementById('sender_name_update').value = '';
-          if (result.data.remaining_balance <= 0) { document.getElementById('paymentFormSection').style.display = 'none'; }
-        } else {
-          resultDiv.className = 'result-message error';
-          resultDiv.textContent = result.error || LANG.anError;
-        }
-      })
-      .catch(function() {
-        resultDiv.className = 'result-message error';
-        resultDiv.textContent = LANG.errorTryAgain;
-      });
-    }
-    function resetSearch() {
-      document.getElementById('searchSection').style.display = 'block';
-      document.getElementById('promiseInfo').style.display = 'none';
-      document.getElementById('searchResultsList').style.display = 'none';
-      document.getElementById('search_name').value = '';
-      document.getElementById('searchResult').className = 'result-message';
-      document.getElementById('paymentResult').className = 'result-message';
-      window._promiseMatches = null;
-    }
-  </script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js').catch(function(){});
-    }
-  </script>
+  <script src="/js/app.js"></script>
+  <script src="/js/csrf.js"></script>
+  <script src="/js/contribute.js"></script>
 </body>
 </html>

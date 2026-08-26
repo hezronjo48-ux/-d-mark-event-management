@@ -46,8 +46,8 @@
   }
 
   var editEventForm = document.getElementById('editEventForm');
-  if (editForm) {
-    editForm.addEventListener('submit', function(e) {
+  if (editEventForm) {
+    editEventForm.addEventListener('submit', function(e) {
       e.preventDefault();
       var data = {
         name: document.getElementById('edit_name').value,
