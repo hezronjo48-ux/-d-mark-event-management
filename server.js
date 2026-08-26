@@ -110,64 +110,29 @@ app.use(function(req, res, next) {
   next();
 });
 
-function parseCookies(req) {
-  var out = {};
-  var header = req.headers.cookie;
-  if (!header) return out;
-  header.split(';').forEach(function(part) {
-    var idx = part.indexOf('=');
-    if (idx > -1) {
-      var name = part.slice(0, idx).trim();
-      var val = part.slice(idx + 1).trim();
-      try { out[name] = decodeURIComponent(val); } catch (e) { out[name] = val; }
-    }
-  });
-  return out;
-}
-
-function setCsrfCookie(res, token) {
-  res.cookie('dmark.csrf', token, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'lax',
-    maxAge: 8 * 60 * 60 * 1000
-  });
-}
 
 app.use(function(req, res, next) {
-  var cookies = req.cookies || (req.cookies = parseCookies(req));
-  var raw = cookies['dmark.csrf'];
-  if (!raw) {
-    raw = crypto.randomBytes(24).toString('hex');
-    setCsrfCookie(res, raw);
-  }
-  var expected = String(raw).split(':')[0];
-  if (expected.length !== 48) {
-    expected = crypto.randomBytes(24).toString('hex');
-    setCsrfCookie(res, expected);
-  }
   if (req.session) {
-    req.session.csrfToken = expected;
+    if (!req.session.csrfToken) {
+      req.session.csrfToken = crypto.randomBytes(24).toString('hex');
+    }
+    req.csrfToken = req.session.csrfToken;
+  } else {
+    req.csrfToken = crypto.randomBytes(24).toString('hex');
   }
-  req.csrfToken = expected;
-  res.locals.csrfToken = expected;
+  res.locals.csrfToken = req.csrfToken;
   next();
 });
 
 function csrfProtect(req, res, next) {
-  var cookies = req.cookies || parseCookies(req);
-  var token = req.body && req.body._csrf;
-  if (!token) token = req.get('x-csrf-token');
-  var cookieToken = String(cookies['dmark.csrf'] || '').split(':')[0];
-  var sessionToken = (req.session && req.session.csrfToken) || '';
-  var expected = cookieToken || sessionToken || req.csrfToken;
-  if (!token || token !== expected) {
-    if (sessionToken && token === sessionToken) {
+  if (req.session && req.session.csrfToken) {
+    var token = req.body && req.body._csrf;
+    if (!token) token = req.get('x-csrf-token');
+    if (token && token === req.session.csrfToken) {
       return next();
     }
-    return res.status(403).json({ error: 'Invalid or missing CSRF token' });
   }
-  next();
+  return res.status(403).json({ error: 'Invalid or missing CSRF token' });
 }
 
 app.post('/lang/:lang', function(req, res) {
