@@ -1,4 +1,4 @@
-var CACHE_NAME = 'dmark-v3';
+var CACHE_NAME = 'dmark-v4';
 var STATIC_URLS = [
   '/css/style.css',
   '/manifest.json',
@@ -19,7 +19,7 @@ self.addEventListener('activate', function(event) {
   event.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(
-        keys.filter(function(k) { return k !== CACHE_NAME; }).map(function(k) { return caches.delete(k); })
+        keys.map(function(k) { return caches.delete(k); })
       );
     }).then(function() {
       return self.clients.claim();
@@ -31,27 +31,21 @@ self.addEventListener('fetch', function(event) {
   if (event.request.method !== 'GET') {
     return;
   }
-  if (event.request.mode === 'navigate') {
+  var url = event.request.url;
+  var isStatic = STATIC_URLS.some(function(s) { return url.indexOf(s) !== -1; });
+  if (isStatic) {
     event.respondWith(
-      fetch(event.request).then(function(response) {
-        return response;
-      }).catch(function() {
-        return caches.match('/admin/login');
+      caches.match(event.request).then(function(cached) {
+        return cached || fetch(event.request).then(function(response) {
+          if (response && response.status === 200) {
+            var copy = response.clone();
+            caches.open(CACHE_NAME).then(function(cache) {
+              cache.put(event.request, copy);
+            });
+          }
+          return response;
+        });
       })
     );
-    return;
   }
-  event.respondWith(
-    caches.match(event.request).then(function(cached) {
-      return cached || fetch(event.request).then(function(response) {
-        if (response && response.status === 200 && event.request.url.indexOf(self.location.origin) === 0) {
-          var copy = response.clone();
-          caches.open(CACHE_NAME).then(function(cache) {
-            cache.put(event.request, copy);
-          });
-        }
-        return response;
-      });
-    })
-  );
 });
