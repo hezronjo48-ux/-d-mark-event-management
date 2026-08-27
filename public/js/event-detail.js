@@ -24,7 +24,7 @@
     document.getElementById('edit_person1_label').textContent = showPerson2 ? (Msg.person1 || 'Person 1') : (Msg.personName || 'Person name');
   }
 
-  function showEditContributor(btn) {
+  function showEditContributor(e, btn) {
     document.getElementById('edit_contributor_id').value = btn.getAttribute('data-id');
     document.getElementById('edit_con_name').value = btn.getAttribute('data-name');
     document.getElementById('edit_con_phone').value = btn.getAttribute('data-phone');
@@ -281,7 +281,7 @@
     });
   }
 
-  function deleteContributor(btn) {
+  function deleteContributor(e, btn) {
     var cid = btn.getAttribute('data-id');
     var name = btn.getAttribute('data-name');
     if (!confirm('Delete contributor "' + name + '"? This cannot be undone.')) return;
