@@ -310,9 +310,9 @@
                   <td data-label="<%= __('date') %>"><%= new Date(c.created_at).toLocaleDateString() %></td>
                   <td data-label="<%= __('actions') %>">
                     <div class="table-actions">
-                      <a href="/admin/events/<%= event.id %>/contributors/<%= c.id %>" class="btn btn-sm btn-secondary"><i class="fas fa-eye"></i> <%= __('view') %></a>
-                      <button data-action="editContributor" data-id="<%= c.id %>" data-name="<%= c.full_name %>" data-phone="<%= c.phone_number || '' %>" data-type="<%= c.contribution_type %>" data-promise="<%= c.promise_amount || 0 %>" data-paid="<%= c.paid_amount || 0 %>" class="btn btn-sm btn-secondary"><i class="fas fa-pen"></i> <%= __('edit') %></button>
-                      <button data-action="deleteContributor" data-id="<%= c.id %>" data-name="<%= c.full_name %>" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> <%= __('delete') %></button>
+                      <a href="/admin/events/<%= event.id %>/contributors/<%= c.id %>" class="btn btn-sm btn-secondary" title="<%= __('view') %>"><i class="fas fa-eye"></i></a>
+                      <button data-action="editContributor" data-id="<%= c.id %>" data-name="<%= c.full_name %>" data-phone="<%= c.phone_number || '' %>" data-type="<%= c.contribution_type %>" data-promise="<%= c.promise_amount || 0 %>" data-paid="<%= c.paid_amount || 0 %>" class="btn btn-sm btn-secondary" title="<%= __('edit') %>"><i class="fas fa-pen"></i></button>
+                      <button data-action="deleteContributor" data-id="<%= c.id %>" data-name="<%= c.full_name %>" class="btn btn-sm btn-danger" title="<%= __('delete') %>"><i class="fas fa-trash"></i></button>
                     </div>
                   </td>
                 </tr>
