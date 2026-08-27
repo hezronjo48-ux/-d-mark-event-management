@@ -281,6 +281,19 @@
     });
   }
 
+  function deleteContributor(btn) {
+    var cid = btn.getAttribute('data-id');
+    var name = btn.getAttribute('data-name');
+    if (!confirm('Delete contributor "' + name + '"? This cannot be undone.')) return;
+    fetch('/admin/events/' + eventId + '/contributors/' + cid + '/delete', { method: 'POST' })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.success) { window.location.reload(); }
+        else { alert(d.error || (Msg.failed || 'Failed')); }
+      })
+      .catch(function() { alert(Msg.failed || 'Failed'); });
+  }
+
   if (window.app && window.app.registerAction) {
     window.app.registerAction('showEditEvent', showEditEvent);
     window.app.registerAction('closeEditEvent', closeEditEvent);
@@ -295,5 +308,6 @@
     window.app.registerAction('closeEditContributor', closeEditContributor);
     window.app.registerAction('showImportExcel', showImportExcel);
     window.app.registerAction('closeImportExcel', closeImportExcel);
+    window.app.registerAction('deleteContributor', deleteContributor);
   }
 })();

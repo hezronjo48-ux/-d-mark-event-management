@@ -998,6 +998,21 @@ async function main() {
     }
   });
 
+  app.post('/admin/events/:id/contributors/:cid/delete', requireAuth, csrfProtect, (req, res) => {
+    try {
+      const contributor = db.prepare('SELECT * FROM contributors WHERE id = ? AND event_id = ?').get([req.params.cid, req.params.id]);
+      if (!contributor) {
+        return res.status(404).json({ error: 'Contributor not found' });
+      }
+      db.prepare('DELETE FROM payments WHERE contributor_id = ?').run([req.params.cid]);
+      db.prepare('DELETE FROM contributors WHERE id = ? AND event_id = ?').run([req.params.cid, req.params.id]);
+      logActivity('Delete Contributor', 'Deleted contributor: ' + contributor.full_name + ' from event #' + req.params.id);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to delete contributor' });
+    }
+  });
+
   app.post('/admin/events/:id/delete', requireAuth, csrfProtect, (req, res) => {
     try {
       const event = db.prepare('SELECT * FROM events WHERE id = ?').get([req.params.id]);
