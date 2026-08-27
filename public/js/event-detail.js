@@ -227,6 +227,60 @@
     if (document.getElementById('manual_type')) toggleManualType();
   });
 
+  function showImportExcel() {
+    document.getElementById('importExcelModal').style.display = 'flex';
+    var status = document.getElementById('importExcelStatus');
+    if (status) status.textContent = '';
+    var fileInput = document.getElementById('importExcelFile');
+    if (fileInput) fileInput.value = '';
+  }
+
+  function closeImportExcel() {
+    document.getElementById('importExcelModal').style.display = 'none';
+    var status = document.getElementById('importExcelStatus');
+    if (status) status.textContent = '';
+  }
+
+  var importExcelForm = document.getElementById('importExcelForm');
+  if (importExcelForm) {
+    importExcelForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var fileInput = document.getElementById('importExcelFile');
+      if (!fileInput.files.length) return;
+      var status = document.getElementById('importExcelStatus');
+      var btn = document.getElementById('importExcelBtn');
+      status.style.color = '#888';
+      status.textContent = 'Importing...';
+      btn.disabled = true;
+      var formData = new FormData();
+      formData.append('excelFile', fileInput.files[0]);
+      var origFetch = window.__origFetch || window.fetch;
+      var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+      var csrfToken = csrfMeta ? csrfMeta.content : '';
+      origFetch('/admin/import/' + eventId, {
+        method: 'POST',
+        body: formData,
+        headers: { 'x-csrf-token': csrfToken }
+      }).then(function(r) { return r.json(); })
+      .then(function(d) {
+        btn.disabled = false;
+        if (d.success) {
+          status.style.color = '#2e7d32';
+          status.textContent = 'Imported ' + d.imported + ' contributors' + (d.skipped > 0 ? ' (' + d.skipped + ' skipped)' : '') + '!';
+          setTimeout(function() { window.location.reload(); }, 1500);
+        } else {
+          status.style.color = '#c62828';
+          status.textContent = d.error || (Msg.failed || 'Failed');
+        }
+      })
+      .catch(function() {
+        btn.disabled = false;
+        status.style.color = '#c62828';
+        status.textContent = Msg.failed || 'Failed';
+      });
+    });
+  }
+
   if (window.app && window.app.registerAction) {
     window.app.registerAction('showEditEvent', showEditEvent);
     window.app.registerAction('closeEditEvent', closeEditEvent);
@@ -239,5 +293,7 @@
     window.app.registerAction('toggleManualType', toggleManualType, ['change']);
     window.app.registerAction('editContributor', showEditContributor);
     window.app.registerAction('closeEditContributor', closeEditContributor);
+    window.app.registerAction('showImportExcel', showImportExcel);
+    window.app.registerAction('closeImportExcel', closeImportExcel);
   }
 })();

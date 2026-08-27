@@ -7,6 +7,7 @@ const bcrypt = require('bcryptjs');
 const ExcelJS = require('exceljs');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -577,6 +578,100 @@ async function main() {
       res.end();
     } catch (err) {
       res.status(500).send('An error occurred');
+    }
+  });
+
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+
+  app.post('/admin/import/:id', requireAuth, csrfProtect, upload.single('excelFile'), async (req, res) => {
+    try {
+      const event = db.prepare('SELECT * FROM events WHERE id = ?').get([req.params.id]);
+      if (!event) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(req.file.buffer);
+      const sheet = workbook.worksheets[0];
+      if (!sheet || sheet.rowCount < 2) {
+        return res.status(400).json({ error: 'The Excel file is empty or has no data rows' });
+      }
+
+      const headerRow = sheet.getRow(1);
+      var colMap = {};
+      headerRow.eachCell(function(cell, colNumber) {
+        var val = String(cell.value || '').trim().toLowerCase();
+        if (val.indexOf('full name') !== -1) colMap.full_name = colNumber;
+        else if (val.indexOf('phone') !== -1) colMap.phone_number = colNumber;
+        else if (val.indexOf('contribution type') !== -1) colMap.contribution_type = colNumber;
+        else if (val.indexOf('promise amount') !== -1) colMap.promise_amount = colNumber;
+        else if (val.indexOf('paid amount') !== -1) colMap.paid_amount = colNumber;
+        else if (val.indexOf('remaining balance') !== -1) colMap.remaining_balance = colNumber;
+        else if (val.indexOf('payment method') !== -1) colMap.payment_method = colNumber;
+        else if (val === 'status') colMap.status = colNumber;
+        else if (val.indexOf('notes') !== -1) colMap.notes = colNumber;
+      });
+
+      if (!colMap.full_name) {
+        return res.status(400).json({ error: 'Could not find a "Full Name" column in the Excel file' });
+      }
+
+      var imported = 0;
+      var skipped = 0;
+      sheet.eachRow(function(row, rowNumber) {
+        if (rowNumber === 1) return;
+        var fullName = row.getCell(colMap.full_name).value;
+        if (!fullName || String(fullName).trim() === '') { skipped++; return; }
+
+        var phone = colMap.phone_number ? row.getCell(colMap.phone_number).value : null;
+        var contribType = colMap.contribution_type ? String(row.getCell(colMap.contribution_type).value || 'Cash').trim() : 'Cash';
+        var promiseAmt = colMap.promise_amount ? parseFloat(row.getCell(colMap.promise_amount).value) || 0 : 0;
+        var paidAmt = colMap.paid_amount ? parseFloat(row.getCell(colMap.paid_amount).value) || 0 : 0;
+        var remainBal = colMap.remaining_balance ? parseFloat(row.getCell(colMap.remaining_balance).value) : null;
+        var payMethod = colMap.payment_method ? String(row.getCell(colMap.payment_method).value || '').trim() : '';
+        var status = colMap.status ? String(row.getCell(colMap.status).value || 'Done').trim() : 'Done';
+        var notes = colMap.notes ? String(row.getCell(colMap.notes).value || '').trim() : '';
+
+        if (remainBal === null || isNaN(remainBal)) {
+          remainBal = Math.max(0, promiseAmt - paidAmt);
+        }
+        if (status !== 'Done' && status !== 'Incomplete') {
+          status = remainBal <= 0 ? 'Done' : 'Incomplete';
+        }
+
+        var normalizedType = contribType.charAt(0).toUpperCase() + contribType.slice(1).toLowerCase();
+        if (normalizedType !== 'Promise' && normalizedType !== 'Cash') normalizedType = 'Cash';
+
+        db.prepare(
+          'INSERT INTO contributors (event_id, full_name, phone_number, contribution_type, promise_amount, paid_amount, remaining_balance, payment_method, status, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        ).run([
+          event.id,
+          cleanName(String(fullName)),
+          phone ? cleanSmall(String(phone)) : null,
+          normalizedType,
+          normalizedType === 'Promise' ? promiseAmt : 0,
+          normalizedType === 'Cash' ? (paidAmt || promiseAmt) : paidAmt,
+          normalizedType === 'Promise' ? remainBal : 0,
+          payMethod || null,
+          status,
+          notes
+        ]);
+
+        var cidPrefix = nextContributorId(event.id);
+        var insertedId = db.prepare('SELECT id FROM contributors WHERE event_id = ? ORDER BY id DESC LIMIT 1').get([event.id]);
+        if (insertedId) {
+          db.prepare('UPDATE contributors SET contributor_id = ? WHERE id = ?').run([cidPrefix, insertedId.id]);
+        }
+        imported++;
+      });
+
+      logActivity('Import Excel', 'Imported ' + imported + ' contributors for event: ' + event.name);
+      res.json({ success: true, imported: imported, skipped: skipped });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to import Excel file: ' + (err.message || 'Unknown error') });
     }
   });
 
